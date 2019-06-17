@@ -1,0 +1,67 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>操作日志</title>
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <!-- 生产环境版本，优化了尺寸和速度 功能完善后请将vue.development.js该为vue.js-->
+    <!--<script src="${STATIC_URL}assets/vue-2.5.21/vue.js"></script>-->
+    <!-- element UI引入样式 -->
+    <link href="${STATIC_URL}assets/element-2.4.11/index.css" rel="stylesheet">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!-- vue的ajax依赖-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <!--jQuery库使用时请使用标准jQuery语法-->
+    <script src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>
+</head>
+<body>
+<div class="content">
+        <div class="body">
+        <el-card shadow="always">
+            <div>
+                <div id="pagetitle">
+                    操作日志查询
+                </div>
+                <hr id="hr">
+                <el-row type="flex" justify="space-between" align="center" class="row">
+                    <el-col :span="12">
+                        <div @keyup.enter.native="select_log">
+                        <el-col :span="9">
+                            <el-input v-model="search" placeholder="请输入内容" @keyup.enter.native="select_log"></el-input>
+                        </el-col>
+                        <el-col :span="3" style="margin-left: 5px;">
+                            <el-button type="primary" icon="el-icon-search" v-on:click="select_log">搜索</el-button>
+                        </el-col>
+                        </div>
+                    </el-col>
+                </el-row>
+                <el-table :data="Operatelog"  style="width: 100%;margin-top: 5px;" border>
+                    <el-table-column prop="id" label="id" width="100" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="log_type" label="操作类型" show-overflow-tooltip="true" width="220" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="log_name" label="日志名称" show-overflow-tooltip="true" width="150" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="user_name" label="用户名称" show-overflow-tooltip="true" width="150" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="class_name" label="类名称" show-overflow-tooltip="true" width="150" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="method" label="方法名称" show-overflow-tooltip="true" width="150" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="create_time" label="创建时间" show-overflow-tooltip="true" width="200" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="is_success" label="是否成功" show-overflow-tooltip="true" width="150" align="left" sortable>
+                    </el-table-column>
+                    <el-table-column prop="message" label="备注" show-overflow-tooltip="true" width="500" align="left" sortable>
+                    </el-table-column>
+                </el-table>
+                <el-pagination :page-count="page_count" background layout="prev, pager, next" style="float:right"
+                               @current-change="current_change" :current-page="page"></el-pagination>
+            </div>
+        </el-card>
+    </div>
+<input id="siteUrl" type="hidden" value="${SITE_URL}">
+</div>
+    <script src="${STATIC_URL}js/logmanagement/logmanagement.js"></script>
+</body>
+</html>

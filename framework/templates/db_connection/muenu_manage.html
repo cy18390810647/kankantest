@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- 开发环境版本，包含了有帮助的命令行警告--2.5.51 -->
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <!-- element UI引入样式 -->
+    <link rel="stylesheet" href="${STATIC_URL}assets/element-2.4.11/index.css">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!--axios.min.js--vue.js的ajax支持-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <script src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>
+    <link type="text/css" href="${STATIC_URL}css/home.css" rel="stylesheet">
+    <link rel="stylesheet" href="${STATIC_URL}css/net/style.min.css">
+    <link href="${STATIC_URL}css/net/font_997278_ptr5bdmor4j.css" rel="stylesheet">
+    <link href="${STATIC_URL}assets/iconfont/iconfont.css" rel="stylesheet">
+    <script src="${STATIC_URL}js/muenu_manage/muenu_manage.js"></script>
+    <script src="${STATIC_URL}js/csrftoken.js"></script>
+</head>
+
+<body>
+<input id="siteUrl" type="hidden" value="${SITE_URL}">
+<div class="content" id="main">
+    <div class="header">
+        <el-breadcrumb class="route" separator-class="el-icon-arrow-right">
+            <el-breadcrumb-item>首页</el-breadcrumb-item>
+            <el-breadcrumb-item>菜单管理</el-breadcrumb-item>
+        </el-breadcrumb>
+    </div>
+
+    <div class="body">
+        <el-card shadow="always">
+            <!--表单展示-->
+            <div v-if="isAdd == '1'">
+                <div id="pagetitle">
+                    菜单管理
+                </div>
+                <hr id="hr">
+                <el-row type="flex" justify="space-between" class="row">
+                    <el-col :span="12">
+                        <div @keyup.enter="select_table">
+                        <el-col :span="9">
+                            <el-input v-model="menusearch" clearable placeholder="请输入菜单名称或菜单地址" @keyup.enter="select_table"></el-input>
+                        </el-col>
+                        <el-col :span="3" style="margin-left: 5px;">
+                            <el-button type="primary" icon="el-icon-search" v-on:click="select_table">搜索</el-button>
+                        </el-col>
+                        </div>
+                    </el-col>
+                    <el-col :span='6'>
+                        <el-button type='primary' @click='synUser' style="margin-left: 100px">同步蓝鲸用户</el-button>
+                     </el-col>
+                     <el-col :span='6'>
+                        <el-button type='primary' @click='show'>新增菜单</el-button>
+                        <el-button type='primary' @click='get_roleAmuenus'>权限分配</el-button>
+                    </el-col>
+                </el-row>
+
+                <el-table :data="tableData" :header-cell-style="rowClass" style="width: 100%" border>
+                    <el-table-column prop="id" label="序号" width="80px">
+                    </el-table-column>
+                    <el-table-column prop="mname" label="菜单名称" style="width: 25%" sortable>
+                    </el-table-column>
+                    <el-table-column prop="url" label="菜单地址" style="width: 25%" sortable>
+                    </el-table-column>
+                    <el-table-column prop="operation" label="操作">
+                        <template slot-scope="scope">
+                            <el-button type="text" @click="showe(scope.row)" size="small">编辑</el-button>
+                            <el-button type="text" @click="delete_muenu(scope.row.id,scope.$index,tableData)"
+                                       size="small">删除
+                            </el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-pagination :page-count="page_count" :current-page="currentPage" background
+                               layout="prev, pager, next" style="float:right"
+                               @current-change="current_change"></el-pagination>
+            </div>
+
+            <!--新增-->
+            <div v-else-if="isAdd == '2'">
+                <div id="pagetitle">
+                    新增菜单
+                </div>
+                <hr id="hr">
+                <el-form label-width="140px" :model="addmuenus" ref="addmuenus" :rules="rules" class="demo-ruleForm">
+                    <el-row type="flex" class="row-bg" justify="space-around">
+                        <el-col :span="6">
+                            <el-form-item label="父级菜单名称:" prop="pcode">
+                                <el-select v-model="addmuenus.pcode" placeholder="请选择">
+                                    <el-option
+                                            v-for="item in pcodes"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="菜单图标:" prop="mImg">
+                                <el-select v-model="addmuenus.mImg" placeholder="请选择">
+                                    <el-option
+                                            v-for="item in mImgs"
+                                            :value="item.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="1">
+                            <i :class="addmuenus.mImg"></i>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="菜单名称：" prop="mname">
+                                <el-input v-model="addmuenus.mname" @blur="verify_name_only()"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="url地址：" prop="url">
+                                <el-input v-model="addmuenus.url"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+                <el-row type="flex" class="row-bg" justify="center">
+                    <el-col :span="2">
+                        <el-button type="primary" id="button" @click="savemuenu('addmuenus')">保存</el-button>
+                    </el-col>
+                    <el-col :span="2">
+                        <el-button @click="hide()" id="button">取消</el-button>
+                    </el-col>
+                </el-row>
+            </div>
+
+
+            <!--权限分配-->
+            <div v-else-if="isAdd == '4'">
+                <div id="pagetitle">
+                    权限分配
+                </div>
+                <hr id="hr">
+                <el-tree :data="dataCk" ref="tree" show-checkbox :default-checked-keys="checkedKeys" node-key="id"
+                         @check="checked"
+                >
+                </el-tree>
+                <el-button type="primary" @click="savemnus()">保存</el-button>
+                <el-button @click="hide()">取消</el-button>
+            </div>
+
+            <!--编辑-->
+            <div v-else="isAdd == '3'">
+                <div id="pagetitle">
+                    编辑菜单
+                </div>
+                <hr id="hr">
+                <el-form label-width="140px" :model="editMuenu" ref="editMuenu" :rules="rules" class="demo-ruleForm">
+                    <el-row type="flex" class="row-bg" justify="space-around">
+                        <el-col :span="6">
+                        <el-form-item label="父级菜单名称:" prop="pcode">
+                            <el-select v-model="editMuenu.pcode" placeholder="请选择">
+                                <el-option
+                                        v-for="item in pcodes"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                            <el-form-item label="菜单图标:" prop="mImg">
+                                <el-select v-model="editMuenu.mImg" placeholder="请选择">
+                                    <el-option
+                                            v-for="item in mImgs"
+                                            :value="item.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="1">
+                            <i :class="editMuenu.mImg"></i>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="菜单名称：" prop="mname">
+                                <el-input v-model="editMuenu.mname" @blur="verify_name_only()"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="url地址：" prop="url">
+                                <el-input v-model="editMuenu.url"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+                <el-row type="flex" class="row-bg" justify="center">
+                    <el-col :span="2">
+                        <el-button type="primary" @click="edit_muenu('editMuenu')">修改</el-button>
+                    </el-col>
+                    <el-col :span="2">
+                        <el-button @click="hide()">取消</el-button>
+                    </el-col>
+                </el-row>
+            </div>
+            <!--||||||||||||||||-->
+
+
+        </el-card>
+    </div>
+
+</div>
+
+
+</body>
+</html>
+

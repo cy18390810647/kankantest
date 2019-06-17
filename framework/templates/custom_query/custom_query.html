@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- 开发环境版本，包含了有帮助的命令行警告--2.5.51 -->
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <script src="${STATIC_URL}js/csrftoken.js"></script>
+    <!-- element UI引入样式 -->
+    <link rel="stylesheet" href="${STATIC_URL}assets/element-2.4.11/index.css">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!--axios.min.js--vue.js的ajax支持-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <script src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}assets/echarts/echarts.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}assets/echarts/macarons.js"></script>
+    <link rel="stylesheet" href="${STATIC_URL}css/notification/notification.css">
+    <link rel="stylesheet" href="${STATIC_URL}css/net/style.min.css">
+    <script type="text/javascript" src="${STATIC_URL}js/custom_query/custom_query.js"></script>
+    <style type="text/css">
+        .thRow th {
+            padding: 0;
+        }
+        .dialog_height {
+            height: 50%;
+            overflow:scroll;
+        }
+    </style>
+</head>
+<body>
+<input id="siteUrl" type="hidden" value="${SITE_URL}">
+<div id="customQueryManage">
+    <el-row style="margin-bottom: 5px;">
+        <el-col :span="24">
+            <el-breadcrumb separator-class="el-icon-arrow-right">
+                <el-breadcrumb-item>首页</el-breadcrumb-item>
+                <el-breadcrumb-item>自定义查询</el-breadcrumb-item>
+            </el-breadcrumb>
+        </el-col>
+    </el-row>
+    <el-card>
+        <!--表单展示-->
+        <div v-if="customQueryTableStatus == 'list'">
+            <el-row>
+                <el-col :span="24">
+                    <div style="font-weight: bold;">自定义查询列表</div>
+                    <hr>
+                </el-col>
+            </el-row>
+            <el-row type="flex" justify="space-between" align="center" class="row">
+                <el-col :span="12">
+                    <el-col :span="9" style="margin-right: 5px;">
+                        <el-input v-model="queryNameSearch" size="medium" placeholder="请输入查询名称" @keyup.enter.native="customQuerySearch"></el-input>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-button type="primary" size="medium" icon="el-icon-search" v-on:click="customQuerySearch">
+                            搜索
+                        </el-button>
+                    </el-col>
+                </el-col>
+                <el-col :span='12' style="text-align: right">
+                    <el-button type='primary' size="medium" @click='customQueryAdd'>新增自定义查询</el-button>
+                </el-col>
+            </el-row>
+            <el-table :data="customQueryTableData" border style="width:100%;margin-top: 5px;">
+                <el-table-column prop="id" label="序号" width="80px;">
+                </el-table-column>
+                <el-table-column prop="query_name" label="查询名称" width="220px;" align="center" sortable>
+                </el-table-column>
+                <el-table-column prop="show_type" label="显示类型" width="120px;" align="center" sortable>
+                </el-table-column>
+                <el-table-column prop="query_sql" show-overflow-tooltip="true" label="查询SQL" width="600px;" align="center" sortable>
+                </el-table-column>
+                <el-table-column prop="operation" label="操作" width="181px;" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small" @click="customQueryEdit(scope.row.id)">编辑</el-button>
+                        <el-button type="text" size="small" @click="customQueryDelete(scope.row.id)">删除</el-button>
+                        <el-button type="text" size="small" @click="customQueryShow(scope.row)">展示</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <el-pagination :page-count="queryCount" :current-page="currentPage" background layout="prev, pager, next"
+                           style="float:right" @current-change="customQueryPageChange"></el-pagination>
+        </div>
+        <!--数据添加/修改-->
+        <div v-if="customQueryTableStatus == 'add' || customQueryTableStatus == 'edit'">
+            <el-row>
+                <el-col :span="24">
+                    <div style="font-weight: bold">自定义查询添加</div>
+                    <hr>
+                </el-col>
+            </el-row>
+            <el-form :model="customQueryData" ref="customQueryData" label-position="right"
+                     label-width="100px">
+                <el-row>
+                    <el-col :span="30" :offset="1">
+                        <el-form-item label="查询名称:" prop="query_name">
+                            <el-input v-model="customQueryData.query_name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="30" :offset="1">
+                        <el-form-item label="数据库连接:">
+                            <el-select v-model="customQueryData.conn_id" filterable placeholder="请选择"
+                                       style="width: 100%">
+                                <el-option v-for="db in customQueryDatabase" :label="db.label"
+                                           :value="db.value"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="展示方式:" prop="show_type">
+                            <el-select v-model="customQueryData.show_type" collapse-tags filterable placeholder="请选择"
+                                       style="width: 100%">
+                                <el-option v-for="type in customQueryShowType" :key="type" :label="type"
+                                           :value="type"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="23" :offset="1">
+                        <el-form-item label="查询SQL:" prop="query_sql">
+                            <el-input type="textarea" :rows="5" v-model="customQueryData.query_sql"
+                                      @change="add_flag=false"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row class="alertRuleFormButton">
+                    <el-button @click="customQueryList()">取 消</el-button>
+                    <el-button type="success" @click="sql_test('')">验证SQL</el-button>
+                    <el-button type="primary" @click="customQuerySave('customQueryData')">添加 / 修改</el-button>
+                </el-row>
+                <el-dialog
+                        title="查询展示"
+                        :visible.sync="dialogVisible1"
+                        width="80%" custom-class="dialog_height">
+                    <div id="show1">
+                        <el-table
+                                :data="tableData"
+                                style="width: 100%">
+                            <el-table-column
+                                    :prop="field"
+                                    :label=field
+                                    width="TableLength" v-for="field in fileds">
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                    <el-button @click="dialogVisible1 = false">返回</el-button>
+                </el-dialog>
+                <el-dialog
+                        title="查询展示"
+                        :visible.sync="dialogVisible2"
+                        width="80%" height="80%" @opened="show_chart">
+                    <div id="show2" style="width: 500px;height: 500px">
+
+                    </div>
+                    <el-button @click="dialogVisible2 = false">返回</el-button>
+                </el-dialog>
+            </el-form>
+        </div>
+    </el-card>
+    <el-dialog fullscreen
+            title="查询展示"
+            :visible.sync="dialogVisible3"
+            width="100%" height="100%" custom-class="dialog_height">
+        <div id="show1">
+            <el-table
+                    :data="tableData"
+                    style="width: 100%">
+                <el-table-column
+                        :prop="field"
+                        :label=field
+                        width="TableLength" v-for="field in fileds">
+                </el-table-column>
+            </el-table>
+        </div>
+        <el-button @click="dialogVisible3 = false">返回</el-button>
+    </el-dialog>
+    <el-dialog fullscreen
+            title="查询展示"
+            :visible.sync="dialogVisible4"
+            width="100%" height="100%" @opened="show_chart">
+        <div id="show2" style="width:90%;height:500px;">
+
+        </div>
+        <el-button @click="dialogVisible4 = false">返回</el-button>
+    </el-dialog>
+</div>
+</body>
+</html>

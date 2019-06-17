@@ -1,0 +1,858 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>报表统计</title>
+    <script type="text/javascript" src="${STATIC_URL}assets/echarts/echarts.js"></script>
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <!-- 生产环境版本，优化了尺寸和速度 功能完善后请将vue.development.js该为vue.js-->
+    <!--<script src="${STATIC_URL}assets/vue-2.5.21/vue.js"></script>-->
+    <!-- element UI引入样式 -->
+    <link href="${STATIC_URL}assets/element-2.4.11/index.css" rel="stylesheet">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!-- vue的ajax依赖-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+
+    <link href="${STATIC_URL}css/net/jquery.range.css" rel="stylesheet">
+    <script src="${STATIC_URL}js/net/jquery-1.10.2.min.js"></script>
+</head>
+<body>
+<div class="content">
+        <div class="body">
+        <el-card shadow="always">
+            <div>
+                <div id="pagetitle">
+                    报表统计查询
+                </div>
+                <hr id="hr">
+                <div id="hide_k" style="display:block">
+                    <el-row type="flex" justify="space-between" align="center" class="row">
+                        <el-col :span="12">
+                            <el-col :span="9">
+                                <el-input v-model="search" clearable placeholder="请输入场景名称检查日志" @keyup.enter.native="query_info"></el-input>
+                            </el-col>
+                            <el-col :span="3">
+                                <el-button type="primary" icon="el-icon-search" v-on:click="query_info"
+                                           style="margin-left: 10px;">搜索
+                                </el-button>
+                            </el-col>
+                        </el-col>
+                    </el-row>
+                    <el-row type="flex" justify="space-between" align="center" class="row">
+                        <el-col :span="12" style="margin-top: 5px">
+                            <el-col :span="9">
+                                <el-input v-model="keyword" clearable placeholder="请输入关键字检查日志" @keyup.enter.native="query_info"></el-input>
+                            </el-col>
+                        </el-col>
+                    </el-row>
+                    <el-row type="flex" justify="space-between" align="center" class="row">
+                        <el-col :span="9" style="margin-top: 5px">
+                            <template>
+                                <div class="block" id="block" >
+                                    <el-date-picker
+                                            v-model="date_Choice"
+                                            value-format="yyyy-MM-dd HH:mm:ss"
+                                            type="datetimerange"
+                                            range-separator="至"
+                                            start-placeholder="开始日期"
+                                            end-placeholder="结束日期">
+                                    </el-date-picker>
+                                </div>
+                            </template>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div id="date_selection" style="display:none">
+                    <el-row>
+                        <el-col :span="12" style="margin-top: 5px">
+                            <el-row type="flex">
+                                <el-time-picker
+                                        is-range
+                                        v-model="date_selection"
+                                            value-format="HH:mm:ss"
+                                        range-separator="至"
+                                        start-placeholder="开始时间"
+                                        end-placeholder="结束时间"
+                                        placeholder="选择时间范围">
+                                </el-time-picker>
+                            </el-row>
+                        </el-col>
+                    </el-row>
+                </div>
+                <el-col :span="4" style="margin-top: 5px">
+                    <el-select placeholder="请选择日志类型" v-model="log_type" @change="change_type">
+                        <el-option label="日志查询" value="log"></el-option>
+                        <el-option label="场景运行即将到期查询" value="about_to_expire"></el-option>
+                        <el-option label="场景运行比对" value="compare"></el-option>
+                        <el-option label="场景运行情况统计" value="sceneOperation"></el-option>
+                        <el-option label="场景月运行情况统计分析" value="monthly_operation_statistics"></el-option>
+                    </el-select>
+                </el-col>
+
+                <div id="hide_m" style="display:none">
+                    <el-row type="flex" align="middle">
+                        <el-col :span="1"  style="margin-left: 20px">场景:</el-col>
+                        <el-col :span="3">
+
+                            <el-select placeholder="请选择场景" v-model="Cscene" value-key="id" @change="chose_scenes">
+                                <el-option v-for="item in scenes_data" :label="item.sname" :key="item.id"
+                                           :value="item"></el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="1"  style="margin-left: 20px">日期:</el-col>
+                        <el-col :span="3" style="margin-top: 5px">
+                            <el-date-picker
+                                    v-model="scene_time"
+                                    value-format="yyyy-MM-dd HH:mm:ss"
+                                    type="datetimerange"
+                                    @change="sceneTChang"
+                                    range-separator="至"
+                                    start-placeholder="开始日期"
+                                    end-placeholder="结束日期">
+                            </el-date-picker>
+                        </el-col>
+
+                    </el-row>
+
+                    <el-row>
+                        <el-col :span="5" style="margin-top: 5px">
+                            <el-button type="primary" @click="drawging_">
+                                <span>画图</span>
+                            </el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+
+                <div id="table1" style="display: block">
+                    <el-table :data="Operatelog" style="width: 150%">
+                        <el-table-column prop="id" label="id" width="100" align="center">
+                        </el-table-column>
+                        <el-table-column prop="log_type" label="操作类型(场景名称)" width="220" align="center">
+                        </el-table-column>
+                        <el-table-column prop="log_name" label="日志名称" width="150" align="center">
+                        </el-table-column>
+                        <el-table-column prop="user_name" label="用户名称" width="150" align="center">
+                        </el-table-column>
+                        <el-table-column prop="create_time" label="创建时间" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="is_success" label="是否成功" width="150" align="center">
+                        </el-table-column>
+                        <el-table-column prop="message" label="备注" width="800" align="center">
+                        </el-table-column>
+                    </el-table>
+                    <el-pagination :page-count="page_count1" background layout="prev, pager, next" style="float:right"
+                                   @current-change="current_change" :current-page="page"></el-pagination>
+                </div>
+
+                <div id="table2" style="display:none">
+                    <el-table :data="alertRuleTableData">
+                        <el-table-column prop="scene_id" label="场景ID" width="100">
+                        </el-table-column>
+                        <el-table-column prop="scene_name" label=场景名字 width="100" align="center">
+                        </el-table-column>
+                        <el-table-column prop="id" label="监控项ID" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="monitor_name" label="监控项名字" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="alert_title" label="告警标题" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="alert_content" label="告警内容" width="500" align="center">
+                        </el-table-column>
+                        <el-table-column prop="alert_time" label="告警时间" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="persons" label="告警人" width="200" align="center">
+                        </el-table-column>
+
+                    </el-table>
+                    <el-pagination :page-count="alertRulesCount" background layout="prev, pager, next"
+                                   style="float:right"
+                                   @current-change="alertRulePageChange" :current-page="page"></el-pagination>
+                </div>
+                <div id="table3" style="display:none">
+                    <el-table :data="aboutTableDate">
+                        <el-table-column prop="scene_id" label="场景ID" width="150">
+                        </el-table-column>
+                        <el-table-column prop="scene_name" label=场景名字 width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="item_id" label="监控项ID" width="150" align="center">
+                        </el-table-column>
+                        <el-table-column prop="monitor_name" label="监控项名字" width="500" align="center">
+                        </el-table-column>
+                        <el-table-column prop="start_time" label="开始时间" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="end_time" label="结束时间" width="200" align="center">
+                        </el-table-column>
+                        <el-table-column prop="minture" label="间距分钟" width="150" align="center">
+                        </el-table-column>
+                    </el-table>
+                    <el-pagination :page-count="aboutRulesCount" background layout="prev, pager, next"
+                                   style="float:right"
+                                   @current-change="about_change" :current-page="page"></el-pagination>
+                </div>
+
+                <div id="scene_compare" style="display:none">
+                    <!--画图开始-->
+                    <div id="scene_et" style="width: 700px;height: 400px;margin: 60px">
+                    </div>
+                    <!--画图结束勿动-->
+                    <!--场景比对table-->
+                    <div id="get_days" style="display: none">
+                     <el-table :data="dayData" style="width: 100%;margin-top: 20px">
+                         <el-table-column prop="timedata" label="比对时间" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="itemNums" label="场景数" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="begin_time" label="开始时间" style="width: 15%" show-overflow-tooltip>
+                         </el-table-column>
+                         <el-table-column prop="end_time" label="结束时间" style="width: 15%" show-overflow-tooltip>
+                         </el-table-column>
+                         <el-table-column prop="time_consum" label="总耗时" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="success_items" label=运行成功数 style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="failed_items" label="执行失败数" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="succeess_persent" label="成功率" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="alertNums" label="告警数量" style="width: 15%" align="center">
+                         </el-table-column>
+                     </el-table>
+
+                    </div>
+                    <!--场景比对结束-->
+                </div>
+
+                <div id="table10" style="display:none">
+                        <div class="container">
+                            <el-col :span="12" style="margin-top: 5px;text-align: left">
+                                <div class="block">
+                                    <span class="demonstration">周</span>
+                                    <el-date-picker
+                                      v-model="weeks"
+                                      type="week"
+                                      format="yyyy 第 WW 周"
+                                      placeholder="选择周">
+                                    </el-date-picker>
+                                    <el-button icon="el-icon-search" circle  v-on:click="get_week"></el-button>
+                                </div>
+                            </el-col>
+                     <el-table :data="sceneOperationRuleTableData" style="width: 100%;margin-top: 20px">
+                         <el-table-column prop="date" label="时间" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="scene_num" label="场景数" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="success_num" label=运行成功数 style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="success_rate" label="运行成功率" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="failed_num" label="执行失败数" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="alert_num" label="告警数量" style="width: 15%" align="center">
+                         </el-table-column>
+                     </el-table>
+                     <el-pagination :page-count="sceneOperationCount" background layout="prev, pager, next" style="float:right"
+                               @current-change="sceneOperationpage" :current-page="page"></el-pagination>
+                </div>
+
+                    </div>
+                 <div id="table4" style="display:none">
+                     <div class="container">
+                         <el-col :span="12" style="margin: -67px 0 0 266px;;text-align: left">
+                          <div class="block">
+                            <span >年</span>
+                            <el-date-picker
+                              v-model="years"
+                              type="year"
+                              placeholder="选择年"
+                              value-format="yyyy">
+                            </el-date-picker>
+                            <el-button icon="el-icon-search" circle  v-on:click="get_year"></el-button>
+                          </div>
+                         </el-col>
+                     </div>
+                     <div id="scene_et_table4" style="width:1000px;height: 500px;margin: 20px;margin-top: 80px;">
+                     </div>
+                     <div id="get_days" style="display: none">
+                     </div>
+                     <el-table :data="monthly_operationTableData" style="width: 100%;margin-top: 20px">
+                         <el-table-column prop="date" label="统计日期" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="total" label="场景数" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="Success_num" label=运行成功数 style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="success_rate" label="运行成功率" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="failure_num" label="执行失败数" style="width: 15%" align="center">
+                         </el-table-column>
+                         <el-table-column prop="alert_num" label="告警数量" style="width: 15%" align="center">
+                         </el-table-column>
+                     </el-table>
+
+
+                    </div>
+            </div>
+        </el-card>
+    </div>
+
+</div>
+<script type="text/javascript">
+     axios.interceptors.request.use((config) => {
+        config.headers['X-Requested-With'] = 'XMLHttpRequest';
+        let regex = /.*csrftoken=([^;.]*).*$/; // 用于从cookie中匹配 csrftoken值
+        config.headers['X-CSRFToken'] = document.cookie.match(regex) === null ? null : document.cookie.match(regex)[1];
+        return config
+    });
+var vm = new Vue({
+        el: '.content',
+        data: {
+            page_count1: 100,                             //总页码数
+            alertRulesCount:1,
+            sceneOperationCount:1,
+            page: 1,                                   //分页页码数
+            Operatelog:[],
+            search: '',                                 //搜索框
+            log_type: '',                                //日志类型
+            alertRuleTableData: [],
+            sceneOperationRuleTableData:[],
+            aboutTableDate: [],
+            keyword: '',                                 //关键字内容
+            date_Choice: '',                            //时间选择
+            date_selection: '',                            //时间选择
+            //以下是场景勿动
+            scenes_tab: '',
+
+            myChart: '',
+            scenes_data: [],
+            Cscene: '',
+            Cscene_id:'',
+            scene_time: '',
+            pattern_data: [],
+            dayData:[],
+            aboutRulesCount:1,
+
+            sCount: 1,
+            monthly_operation_statistics:'',
+            monthly_operationTableData:[],
+            weeks:'',                                    //运行情况周数查询
+            years:'',
+        },
+        methods: {
+            //查询后，进入第一页
+            show(){
+                vm.page = 1;
+                vm.search_history();
+
+            },
+            search_history() {
+               //显示
+                axios({
+                    method: 'post',
+                    url: '${SITE_URL}history_chart/show_all/',
+                    data: {
+                        page: vm.page,
+                        limit: 10
+                    },
+                }).then(function (res) {
+                    console.log(res)
+                    vm.Operatelog = res.data.message;
+                    vm.page_count1 = res.data.message[0].page_count;
+                });
+
+            },
+            // 点击分页页面查询
+            current_change(value){
+                vm.page = value;
+                if(vm.search != "" || vm.keyword != ""){
+                    vm.select_log();
+                }else{
+                   vm.search_history();
+                }
+            },
+            about_change(value){
+                vm.page = value;
+                axios({
+                    method: 'post',
+                    url: '${SITE_URL}history_chart/about_search/',
+                    data: {
+                        search: vm.search,
+                        page: vm.page,
+                        keyword:vm.keyword,
+                        date_Choice:vm.date_selection,
+                        limit: 10
+                    },
+                }).then((res) => {
+                    if(res.data.message.length == 0){
+                        vm.Operatelog = []
+                        vm.page_count1 = 1
+                    }
+                    else {
+                        vm.aboutTableDate = res.data.results;
+                        vm.aboutRulesCount = res.data.results[0].pages
+                    }
+                })
+            },
+            query_info(){//点击查询按钮
+               vm.page = 1;
+               vm.select_log();
+            },
+            select_log(){
+               if(vm.log_type == 'log'| vm.log_type == ''){
+                   if (vm.keyword == "" & vm.date_Choice == "" & this.search =="") {
+                       vm.show()
+                   }
+                   axios({
+                       method: 'post',
+                       url: '${SITE_URL}history_chart/select_log/',
+                       data: {
+                           search: this.search,
+                           page: this.page,
+                           keyword:vm.keyword,
+                           date_Choice:vm.date_Choice,
+                           limit: 10
+                       },
+                   }).then((res) => {
+                       if(res.data.message.length == 0){
+                           vm.Operatelog = []
+                           vm.page_count1 = 1
+                       }
+                       else{
+                           vm.Operatelog = res.data.message;
+                           vm.page_count1 = res.data.message[0].page_count;
+                       }
+                   })
+               }else if(vm.log_type == 'alert'){
+                 this.alertRulePageChange(1);
+               }else if(vm.log_type == 'about_to_expire'){
+                   vm.about_change(1);
+               }
+
+
+           },
+
+            //用于告警分页方法
+             alertRulePageChange: function(value){
+                vm.page = value;
+                axios({
+                    method: 'post',
+                    url: '${SITE_URL}history_chart/select_rules_pagination',
+                    data: {
+                        search: this.search,
+                        page: vm.page,
+                        keyword:vm.keyword,
+                        date_Choice:vm.date_Choice,
+                        limit: 10
+                    },
+                }).then((res) => {
+                     this.alertRuleTableData = res.data.results;
+                    vm.alertRulesCount = res.data.results[0].pages
+                    console.log(vm.alertRulesCount)
+                })
+            },
+
+            select_Keyword(){
+               if(vm.log_type == 'log'){
+                   vm.page = 1
+                   if (this.search.trim() == '') {
+                       vm.show()
+                   }
+                   axios({
+                       method: 'post',
+                       url: '${SITE_URL}history_chart/select_Keyword',
+                       data: {
+                           'search': vm.keyword,
+                           'page': this.page,
+                           'limit': 10
+                       }
+                   }).then(function (res) {
+                        vm.Operatelog = res.data.message;
+                       vm.page_count1 = res.data.message[0].page_count;
+                   })
+                }
+            },
+
+            //运行情况分页
+            sceneOperationpage: function (value) {
+                vm.page = value;
+                axios({
+                    method: 'post',
+                    url: '${SITE_URL}history_chart/show_operation_report',
+                    data: {
+                        page: vm.page,
+                        limit: 10
+                    },
+                }).then((res) => {
+                    this.sceneOperationRuleTableData = res.data.message;
+                })
+            },
+            //显示场景运行情况
+            show_scene_operation(){
+                vm.page = 1
+                axios({
+                    method: 'post',
+                    url: '${SITE_URL}history_chart/show_operation_report',
+                    data: {
+                        page: vm.page,
+                        limit: 10
+                    },
+                }).then((res) =>{
+                    console.log(res)
+                    vm.sceneOperationRuleTableData = res.data.message
+                    vm.sceneOperationCount = res.data.message[0].page_count;
+                })
+            },
+
+            change_type(value) {
+                vm.page = 1
+                if (value == 'log') {
+                    $("#table1,#hide_k,#block").css('display', 'block');
+                    $("#table3,#scene_compare,#table2,#hide_m,#table10,#table4,#date_selection").css('display', 'none');
+                    vm.get_null();
+                }
+                if (value == 'alert') {
+                     axios({
+                    method: 'post',
+                    url: '${SITE_URL}history_chart/select_all_rules',
+                    data: {
+                        page: vm.page,
+                        limit: 10
+                    },
+                }).then((res) => {
+                    this.alertRuleTableData = res.data.results;
+                    vm.alertRulesCount = res.data.results[0].pages
+                    console.log(vm.page_count1)
+                })
+                    $("#table2,#hide_k,#block").css('display', 'block');
+                    $("#table3,#scene_compare,#table1,#hide_m,#table10,#table4,#date_selection").css('display', 'none');
+                    vm.get_null();
+                }
+                if (value == 'about_to_expire') {
+                     axios({
+                   method:'post',
+                   url:'${SITE_URL}history_chart/about_select',
+                   data:{
+                        page: vm.page,
+                        limit: 10
+                   }
+               }).then(function (res) {
+                    vm.aboutTableDate = res.data.results;
+                    vm.aboutRulesCount = res.data.results[0].pages
+               });
+                    $("#table2,#table1,#scene_compare,#hide_m,#table10,#table4,#block").css('display', 'none');
+                    $("#table3,#hide_k,#date_selection").css('display', 'block');
+                    vm.get_null();
+                }
+                if (value == 'compare') {
+                    $("#table1,#table2,#table3,#hide_k,#table10,#scene_et,#scene_et_table4,#get_days,#table4,#date_selection").css('display', 'none');
+                    $("#scene_compare,#hide_m").css('display', 'block');
+                    axios.post('${SITE_URL}history_chart/select_scenes/').then((res) => {
+                        vm.scenes_data = res.data.results
+                    });
+                }
+                if(value == 'sceneOperation'){
+                     axios({
+                        method: 'post',
+                        url: '${SITE_URL}history_chart/show_operation_report',
+                        data: {
+                            page: vm.page,
+                            limit: 10
+                        },
+                }).then((res) =>{
+                    console.log(res)
+                    vm.sceneOperationRuleTableData = res.data.message
+                    vm.sceneOperationCount = res.data.message[0].page_count;
+                });
+                   $("#table1,#table2,#table3,#scene_compare,#hide_k,#hide_m,#table4,#date_selection").css('display','none');
+                   $('#table10').css('display','block');
+                   vm.get_null();
+                }
+                if(value == 'monthly_operation_statistics'){
+                    axios({
+                   method:'post',
+                   url:'${SITE_URL}history_chart/monthly_select',
+                   data:{
+                        date:vm.years
+                   }
+               }).then(function (res) {
+                    vm.monthly_operationTableData = res.data.message;
+                $("#table1,#table2,#table3,#scene_compare,#hide_k,#hide_m,#table10,#date_selection").css('display','none');
+                   $('#table4').css('display','block');
+                   $('#scene_et_table4').css('display','block');
+                    vm.nmsl(vm.monthly_operationTableData)
+               });
+
+
+                }
+                console.log(vm.page)
+            },
+
+            get_week(){
+                if (vm.weeks){
+                    let date = vm.weeks
+                    vm.sceneOperationCount = 1
+                    axios({
+                            method: 'post',
+                            url: '${SITE_URL}history_chart/get_week/',
+                            data: {
+                                date:date,
+                            },
+                    }).then((res) =>{
+                        vm.sceneOperationRuleTableData = res.data.message
+                    })
+                }else {
+                    vm.show_scene_operation()
+                }
+            },
+            get_year(){
+                if(vm.years){
+                    let date = vm.years
+                    axios({
+                            method: 'post',
+                            url: '${SITE_URL}history_chart/monthly_select/',
+                            data: {
+                                date:date,
+                            },
+                    }).then((res) =>{
+                        vm.monthly_operationTableData = res.data.message
+                        vm.nmsl(vm.monthly_operationTableData)
+                    })
+                }
+            },
+
+            //先选场景
+            chose_scenes(value) {
+                vm.Cscene = value.sname;
+                vm.Cscene_id = value.id;
+            },
+            //再选日期
+            sceneTChang(value){
+                vm.scene_time = value;
+            },
+            //再初始化图
+            draw_line(value) {
+                let list_x = [];
+                let list_s = [];
+                let list_f = [];
+                let list_all = [];
+                let list_alert = [];
+                for (var i = 0; i < value.length; i++) {
+                    this.$set(list_x,i,value[i]['timedata']);
+                    this.$set(list_s,i,value[i]['success_items']);
+                    this.$set(list_f,i, value[i]['failed_items']);
+                    this.$set(list_all,i,value[i]['itemNums']);
+                    this.$set(list_alert,i,value[i]['alertNums']);
+                }
+                if (this.myChart != null && this.myChart != "" && this.myChart != undefined) {
+                    this.myChart.dispose();
+                }
+                vm.myChart = echarts.init(document.getElementById('scene_et'));
+                option = {
+                    title: {
+                        text: '场景比对',
+                        left: 1,
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        left: '25%',
+                        data: ['节点数', '运行成功场景单元数', '运行失败数', '告警数']
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data:list_x,
+                    },
+                    yAxis: {
+                        type: 'value',
+                        min: 0,
+                    },
+                    series: [
+                        {
+                            name: '节点数',
+                            type: 'line',
+                            data: list_all,
+                            itemStyle: {
+                                normal: {
+                                    color: "#000033",
+                                    lineStyle: {
+                                        color: "#000033"
+
+                                    }
+                                }
+                            },
+
+                        },
+                        {
+                            name: '运行成功场景单元数',
+                            type: 'line',
+                            data: list_s,
+                            itemStyle: {
+                                normal: {
+                                    color: "#00FF00",
+                                    lineStyle: {
+                                        color: "#00FF00"
+                                    }
+                                }
+                            },
+                        },
+                        {
+                            name: '运行失败数',
+                            type: 'line',
+                            data: list_f,
+                            itemStyle: {
+                                normal: {
+                                    color: "#FF0000",
+                                    lineStyle: {
+                                        color: "#FF0000"
+                                    }
+                                }
+                            },
+                        },
+                        {
+                            name: '告警数',
+                            type: 'line',
+                            data: list_alert,
+                            itemStyle: {
+                                normal: {
+                                    color: "#3300FF",
+                                    lineStyle: {
+                                        color: "#3300FF"
+                                    }
+                                }
+                            },
+                        },
+                    ]
+                };
+                vm.myChart.setOption(option);
+            },
+            nmsl(value) {
+                if (this.myChart != null && this.myChart != "" && this.myChart != undefined) {
+                    this.myChart.dispose();
+                }
+                let list_x = [];
+                let list_s = [];
+                let list_f = [];
+                let list_all = [];
+                let date = [];
+                for (var i = 0; i < value.length; i++) {
+                    this.$set(list_all,i,value[i]['total']);
+                    this.$set(list_s,i,value[i]['Success_num']);
+                    this.$set(list_f,i, value[i]['failure_num']);
+                    this.$set(list_x,i,value[i]['success_rate']);
+                    this.$set(date,i,value[i]['date']);
+                }
+                vm.myChart = echarts.init(document.getElementById('scene_et_table4'),'default');
+                option = {
+                    title: {
+                        text: '场景比对',
+                        left: 1,
+                    },
+                     tooltip : {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['场景数','运行成功场景单元数','运行失败数','告警数']
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: date
+                    },
+                    yAxis: {
+                        type: 'value',
+                        min: 0,
+                    },
+                    series: [
+                        {
+                            name: '场景数',
+                            type: 'bar',
+                            data: list_all,
+                            stack:'data'
+                        },
+                        {
+                            name: '运行成功场景单元数',
+                            type: 'bar',
+                            data: list_s,
+                            stack:'data'
+                        },
+                        {
+                            name: '运行失败数',
+                            type: 'bar',
+                            data: list_f,
+                            stack:'data'
+                        },
+                        {
+                            name: '告警数',
+                            type: 'bar',
+                            data: list_f,
+                            stack:'data'
+                        },
+                    ]
+                };
+                vm.myChart.setOption(option);
+            },
+            //最后画图，出表
+            drawging_() {
+                if (vm.Cscene == '') {
+                    this.$message('请选择场景');
+                } else if (vm.scene_time == '') {
+                     this.$message('请选择日期');
+                } else {
+                    axios({
+                        method: 'post',
+                        url: '${SITE_URL}history_chart/selectScenes_ById/',
+                        data: {
+                            id: vm.Cscene_id,
+                            dataTime: vm.scene_time,
+                        },
+                    }).then((res) => {
+                        if(res.data.code == 1){
+                            this.$message('此场景没有监控项');
+                            $("#scene_et").html('');
+                            $("#get_days").css('display','none');
+                        }else {
+                            vm.pattern_data = res.data.results;
+                            if(typeof res.data.results == 'number'){
+                                if(res.data.results < 3){
+                                    this.$message('日期间隔需要大于3天');
+                                    $("#scene_et").html('');
+                                    $("#get_days").css('display','none');
+                                }else if(res.data.results > 15){
+                                    this.$message('日期最多选15天，请重新选择');
+                                }else{
+                                    this.$message('此期间不足3条数据');
+                                   $("#scene_et").html('');
+                                   $("#get_days").css('display','none');
+                                }
+
+                            }else{
+                                vm.pattern_data = res.data.results;
+                                vm.dayData = res.data.results;
+                                vm.draw_line(vm.pattern_data);
+                                $('#get_days,#scene_et').css('display','block');
+                                }
+                            }});
+                }
+            },
+            //清空下拉框
+            get_null() {
+                vm.scenes_data = '';
+                vm.Cscene = '';
+                vm.scene_time = '';
+            },
+        }
+    });
+    vm.show();
+
+</script>
+
+
+
+</body>
+</html>

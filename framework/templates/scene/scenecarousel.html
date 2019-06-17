@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="${STATIC_URL}js/net/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}js/dataflow/dataflow2.0.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}js/Component-based.js"></script>
+    <script src="${STATIC_URL}js/net/echarts.min.js"></script>
+    <!-- 开发环境版本，包含了有帮助的命令行警告--2.5.51 ${STATIC_URL}assets/-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <!-- 生产环境版本，优化了尺寸和速度 功能完善后请将vue.development.js该为vue.js-->
+    <!--<script src="${STATIC_URL}assets/vue-2.5.21/vue.js"></script>-->
+    <!-- element UI引入样式 -->
+    <link href="${STATIC_URL}assets/element-2.4.11/index.css" rel="stylesheet">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!-- vue的ajax依赖-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <!--jQuery库使用时请使用标准jQuery语法-->
+    <!--<script src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>-->
+    <!--页面初始化css(Tencent)-->
+    <link href="${STATIC_URL}css/common/init.css" rel="stylesheet">
+    <!--本页面css-->
+    <link href="${STATIC_URL}css/common/main.css" rel="stylesheet">
+    <!--阿里巴巴矢量图标库--项目完成后请下载css并下载css引用的字体文件-->
+    <link href="${STATIC_URL}css/net/font_997278_ptr5bdmor4j.css" rel="stylesheet">
+
+    <!--以下为后台参数-->
+    <!--
+    "${SITE_URL}";	        // app的url前缀,在ajax调用的时候，应该加上该前缀
+    "${STATIC_URL}";       // 静态资源前缀
+    **/--->
+
+    <link type="text/css" href="${STATIC_URL}css/monitorScene/style.css" rel="stylesheet">
+    <script src="${STATIC_URL}js/net/index.min.js"></script>
+    <link rel="stylesheet" href="${STATIC_URL}css/net/style.min.css">
+    <link href="${STATIC_URL}css/net/bk.css" rel="stylesheet">
+    <link href="${STATIC_URL}css/net/jquery.range.css" rel="stylesheet">
+    <script src="${STATIC_URL}js/jquery.range-min.js"></script>
+    <script src="${STATIC_URL}js/csrftoken.js"></script>
+    <script src="${STATIC_URL}js/net/jquery-1.10.2.min.js"></script>
+    <link rel="stylesheet" href="${STATIC_URL}css/net/iconfont.css">
+    <script type="text/javascript"
+            src="${STATIC_URL}js/net/jsplumb.min.js"></script>
+    <link rel="stylesheet"
+          href="${STATIC_URL}css/net/jsPlumbToolkit-defaults.css"/>
+    <link rel="stylesheet" href="${STATIC_URL}css/monitorScene/dataflow-index.css">
+</head>
+<body>
+<input id="site_url" type="hidden" value="${SITE_URL}">
+<div id="main">
+    <template>
+         <div id="div_sence"></div>
+    </template>
+</div>
+<!--暂时的css样式-->
+
+<script>
+      vm = new Vue({
+          el: "#main",
+          data: {
+              imgList: [],
+              imgWidth:''+(document.documentElement.clientWidth-20)+'px',
+              imgHeight: '' + (document.documentElement.clientHeight-50) + 'px',
+              region1: '1',                                                                 //岗位选择
+              position: '1',                                                                  //岗位
+              options: [],
+              show_stop:null,//暂停
+              show_index:0,
+              interval: 10,   //默认10秒
+          },
+          methods: {
+              //取配置的轮播时间
+              get_time_interval(){
+                  axios({
+                      method: 'post',
+                      data:{
+                          code:"wheel_cycle"
+                      },
+                      url:  '${SITE_URL}monitor_scene/open_scene_design/',
+                  }).then((res) => {
+                      if(res && res.data && res.data.time_interval && res.data.time_interval != ""){
+                          let reg = /^\+?[1-9][0-9]*$/;
+                          if(reg.test(res.data.time_interval)){
+                              if(res.data.time_interval != vm.interval){
+                                  vm.interval = res.data.time_interval;
+                                  //清空定时任务
+                                  clearInterval(vm.show_stop);
+                                  //重新启动定时任务
+                                  vm.time_task();
+                              }
+                          }
+                      }
+                  })
+              },
+              time_task(){
+                  if(vm.show_stop){
+                     clearInterval(vm.show_stop);
+                  }
+                  vm.show_stop = setInterval(function(){
+                      vm.get_time_interval()
+                      var iframe_dto = $("#div_sence iframe");
+                      if(iframe_dto.length>0){
+                          if(vm.show_index==(iframe_dto.length-1)){
+                              vm.show_index = -1;
+                          }
+                          vm.show_index=vm.show_index+1
+                          iframe_dto.hide();
+                          $(iframe_dto[vm.show_index]).show();
+                      }
+                  },vm.interval*1000);
+              },
+              query_scene_info:function(){
+                  //取得配置的轮播时间间隔
+                  vm.get_time_interval();
+                  $.ajax({
+                      url:"${SITE_URL}monitor_scene/query_curr_user_scene"
+                      ,async:false
+                      ,type:"post"
+                      ,dataType:"json"
+                      ,success:function(data){
+                          if(vm.show_stop!=null){
+                              clearInterval(vm.show_stop);//设置停止
+                              vm.show_stop = null;
+                          }
+                          $("#div_sence").html("");
+                          if(data.message!=""){
+                              var djson = data.message ;//eval('('+data.message+')');
+                              for(var i=0;i<djson.length;i++){
+                                 var t="display:none;"
+                                 if(i ==0){
+                                     t="";
+                                 }
+                                 var html="<iframe id='i"+djson[i]+"' scrolling=\"auto\" src='${SITE_URL}monitor_scene/page_query_xml_show?id=";
+                                 html+=djson[i]+"' style='"+t+"width:"+vm.imgWidth+";height:1200px;border:none;'></iframe>";
+                                 $("#div_sence").append(html);
+                                 //$("#div"+djson[i]).load("${SITE_URL}monitor_scene/page_query_xml_show?id="+djson[i]);
+                                 //html.hide()
+                              }
+                              vm.time_task();
+                          }
+                      }
+                  })
+              }
+          }
+      })
+      vm.query_scene_info();
+</script>
+</body>
+</html>

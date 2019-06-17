@@ -1,0 +1,278 @@
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=5,IE=9" ><![endif]-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grapheditor</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="${STATIC_URL}js/mxgraph/examples/grapheditor/www/styles/grapheditor.css">
+	<script type="text/javascript">
+		// Parses URL parameters. Supported parameters are:
+		// - lang=xy: Specifies the language of the user interface.
+		// - touch=1: Enables a touch-style user interface.
+		// - storage=local: Enables HTML5 local storage.
+		// - chrome=0: Chromeless mode.
+		var urlParams = (function(url)
+		{
+			var result = new Object();
+			var idx = url.lastIndexOf('?');
+			if (idx > 0)
+			{
+				var params = url.substring(idx + 1).split('&');
+
+				for (var i = 0; i < params.length; i++)
+				{
+					idx = params[i].indexOf('=');
+					if (idx > 0)
+					{
+						result[params[i].substring(0, idx)] = params[i].substring(idx + 1);
+					}
+				}
+			}
+			return result;
+		})(window.location.href);
+		// Default resources are included in grapheditor resources
+		mxLoadResources = false;
+		var static_url = "${STATIC_URL}";
+	</script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Init.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/deflate/pako.min.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/deflate/base64.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/jscolor/jscolor.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/sanitizer/sanitizer.min.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/../../../src/js/mxClient.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/EditorUi.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Editor.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Sidebar.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Graph.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Format.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Shapes.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Actions.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Menus.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Toolbar.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Dialogs.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}js/csrftoken.js"></script>
+</head>
+<style>
+    .m_i{
+        position:absolute;
+        margin:auto;
+        left:0;
+        right:0;
+        top:0;
+        bottom:0;
+        width:650px;
+        height:548px;
+        z-index:10006;
+        background: white;
+        border: solid 0.5px gray;
+    }
+</style>
+<body class="geEditor">
+    <iframe id="openMonitorItem" class="m_i" width="100%" height="100%" src="${SITE_URL}monitor_item/select_monitor_item/" style="display:none;"></iframe>
+	<script type="text/javascript">
+        //csrf验证
+        axios.interceptors.request.use((config) => {
+            config.headers['X-Requested-With'] = 'XMLHttpRequest';
+            let regex = /.*csrftoken=([^;.]*).*$/; // 用于从cookie中匹配 csrftoken值
+            config.headers['X-CSRFToken'] = document.cookie.match(regex) === null ? null : document.cookie.match(regex)[1];
+            return config
+        });
+        function save_scene_design(name,xml){
+            this.myXml = xml;
+            axios({
+                method: 'post',
+                url: SAVE_URL,
+                data: {
+                    filename: name,
+                    xml: xml
+                },
+            }).then(function (res) {
+                if(res.status == 200){
+                    if(res.data.id == '1'){
+                        // 保存成功给父页面的缓存重新赋值
+                        window.opener.vm.scene_edit.scene_content =this.myXml;
+                        mxUtils.alert("场景保存成功！");
+                    }else if(res.data.id != "0"){
+                        mxUtils.alert("场景名称"+"'"+res.data.id+"'"+"重复，请重新编辑后再保存");
+                    }else{
+                        mxUtils.alert("场景名称不匹配，场景没有保存！");
+                    }
+                }
+            })
+        }
+        // 根据场景id 获取可编辑场景的XML文档，生成编辑流程
+        this.item_id = null;
+        this.myXml = null;
+        let myNameInput = null;
+        let myNames = null;
+        let myTexts = null;
+        let myValues = null;
+        let myForm = null;
+        let myAddRemoveButton = null;
+        let myEditor = null;
+        let myEditorUi = null;
+        //保存编排场景的服务地址
+        window.SAVE_URL = "${SITE_URL}monitor_scene/save/";
+        //打开场景选择器，选择要编辑的场景
+        window.OPEN_FORM = "${SITE_URL}monitor_scene/open/";
+        //加载可编辑的场景
+        window.OPEN_URL = "${SITE_URL}monitor_scene/open_scene_design/";
+        //弹出选择监控项窗口
+        function open_monitoy_item(nameInput,names,texts,value,form,addRemoveButton){
+            $("#openMonitorItem").show();
+            myNameInput = nameInput;
+            myNames = names;
+            myTexts = texts;
+            myValues = value;
+            myForm = form;
+            myAddRemoveButton = addRemoveButton;
+        }
+
+        //lxchun将流程设计器中的属性与具体监控项建立关联
+        function relation_monitor_item_id(item_id,monitor_name){
+            //监控项不允许重复关联
+            /*
+            if(map.get(item_id)){
+                mxUtils.alert("监控项"+"'"+monitor_name+"'"+"在当前场景中已被使用，请重新关联");
+                return false;
+            }
+            map.set(item_id,monitor_name);*/
+            myNameInput.value = "item_id";
+            let name = myNameInput.value
+            this.item_id = item_id;
+            //myNameInput.style.cssText = "display:block;";
+            if (name.length > 0 && name != 'label' && name != 'placeholders' && name.indexOf(':') < 0)
+            {
+                try
+                {
+                    var idx = mxUtils.indexOf(myNames, name);
+                    if (idx >= 0 && myTexts[idx] != null)
+                    {
+                        myTexts[idx].value = this.item_id;
+                        myTexts[idx].focus();
+                    }
+                    else
+                    {
+                        // Checks if the name is valid
+                        var clone = myValues.cloneNode(false);
+                        clone.setAttribute(name, '');
+                        if (idx >= 0)
+                        {
+                            myNames.splice(idx, 1);
+                            myTexts.splice(idx, 1);
+                        }
+                        myNames.push(name);
+                        var text = myForm.addTextarea(name + ':', '', 2);
+                        text.style.width = '100%';
+                        myTexts.push(text);
+                        text.value = this.item_id;
+                        myAddRemoveButton(text, name);
+                        text.focus();
+                    }
+                    myValues.setAttribute("label",monitor_name);
+                    myNameInput.value = '';
+                }
+                catch (e)
+                {
+                    mxUtils.alert(e);
+                }
+            }
+        }
+		// Extends EditorUi to update I/O action states based on availability of backend
+        //初始化加载编辑器
+		(function()
+		{
+			var editorUiInit = EditorUi.prototype.init;
+			
+			EditorUi.prototype.init = function()
+			{
+				editorUiInit.apply(this, arguments);
+				this.actions.get('export').setEnabled(false);
+
+				// Updates action states which require a backend
+				if (!Editor.useLocalStorage)
+				{
+					//mxUtils.post(OPEN_URL, '', mxUtils.bind(this, function(req)
+					//{
+						//var enabled = req.getStatus() != 404;
+						//this.actions.get('open').setEnabled(enabled || Graph.fileSupport);
+						//this.actions.get('import').setEnabled(enabled || Graph.fileSupport);
+						//this.actions.get('save').setEnabled(enabled);
+						//this.actions.get('saveAs').setEnabled(enabled);
+						//this.actions.get('export').setEnabled(enabled);
+					//}));
+				}
+			};
+
+			// Adds required resources (disables loading of fallback properties, this can only
+			// be used if we know that all keys are defined in the language specific file)
+			mxResources.loadDefaultBundle = false;
+			var bundle = '${STATIC_URL}js/mxgraph/examples/grapheditor/www/resources/grapheditor.txt';
+			// Fixes possible asynchronous requests
+			mxUtils.getAll([bundle, '${STATIC_URL}js/mxgraph/examples/grapheditor/www/styles/default.xml'], function(xhr)
+			{
+				// Adds bundle text to resources
+				mxResources.parse(xhr[0].getText());
+				
+				// Configures the default graph theme
+				var themes = new Object();
+				themes[Graph.prototype.defaultThemeName] = xhr[1].getDocumentElement(); 
+				myEditor = new Editor(urlParams['chrome'] == '0', themes)
+				// Main
+				myEditorUi = new EditorUi(myEditor);
+			}, function()
+			{
+				document.body.innerHTML = '<center style="margin-top:10%;">导入错误的资源文件.</center>';
+			});
+
+		})();
+        var map = new Map();
+        window.onload = function(){
+
+            let xml = null;
+            let fileName = null;
+            if(window.opener.vm){
+                //编辑场景
+                if(window.opener.vm.scene.scene_name == ""){
+                    xml = window.opener.vm.scene_edit.scene_content;
+                    fileName = window.opener.vm.scene_edit.scene_name;
+                }else{
+                    //新增场景
+                    fileName = window.opener.vm.scene.scene_name;
+                }
+                fileName = window.opener.vm.scene.scene_name || window.opener.vm.scene_edit.scene_name;
+                myEditor.setFilename(fileName);
+            }
+            if(xml){
+                replaceUpdateXml(xml,fileName);
+            }
+        }
+        //在编辑器加载场景
+        function replaceUpdateXml(xml,fileName){
+            // 这段代码很重要，初始加载场景
+			myEditorUi.editor.graph.model.beginUpdate();
+			try
+			{
+			    //设置场景的名称
+			    myEditor.setFilename(fileName);
+				myEditorUi.editor.setGraphXml(mxUtils.parseXml(xml).documentElement);
+				// LATER: Why is hideDialog between begin-/endUpdate faster?
+				myEditorUi.hideDialog();
+			}
+			catch (e)
+			{
+				error = e;
+			}
+			finally
+			{
+				myEditorUi.editor.graph.model.endUpdate();
+			}
+        }
+	</script>
+</body>
+</html>

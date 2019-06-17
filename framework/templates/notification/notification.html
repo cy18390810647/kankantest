@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="UTF-8">
+    <!-- 开发环境版本，包含了有帮助的命令行警告--2.5.51 -->
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <!-- element UI引入样式 -->
+    <link rel="stylesheet" href="${STATIC_URL}assets/element-2.4.11/index.css">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!--axios.min.js--vue.js的ajax支持-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <script src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>
+    <script src="${STATIC_URL}js/notification/notification.js"></script>
+    <link rel="stylesheet" href="${STATIC_URL}css/notification/notification.css">
+    <link rel="stylesheet" href="${STATIC_URL}css/net/style.min.css">
+</head>
+<body>
+<input id="siteUrl" type="hidden" value="${SITE_URL}">
+<div id="alertRuleManage">
+    <el-row>
+        <el-col :span="24">
+            <el-breadcrumb separator-class="el-icon-arrow-right">
+                <el-breadcrumb-item>首页</el-breadcrumb-item>
+                <el-breadcrumb-item>告警规则配置</el-breadcrumb-item>
+            </el-breadcrumb>
+        </el-col>
+    </el-row>
+    <el-card>
+        <!--表单展示-->
+        <div v-if="alertRuleTableStatus == 'list'">
+            <el-row>
+                <el-col :span="24">
+                    <div style="font-weight: bold">告警规则列表</div>
+                    <hr>
+                </el-col>
+            </el-row>
+            <el-row type="flex" justify="space-between" align="center" class="row">
+                <el-col :span="12">
+                    <el-col :span="9">
+                        <el-input v-model="ruleSearch" size="medium" placeholder="请输入规则名称" @keyup.enter.native="alertRuleSearch"></el-input>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-button type="primary" size="medium" icon="el-icon-search" v-on:click="alertRuleSearch">搜索</el-button>
+                    </el-col>
+                </el-col>
+                <el-col :span='12' style="text-align: right">
+                    <el-button type='primary' size="medium" @click='alertRuleAdd'>新增告警规则</el-button>
+                </el-col>
+            </el-row>
+            <el-table :data="alertRuleTableData">
+                <el-table-column prop="id" label="序号" width="50">
+                </el-table-column>
+                <el-table-column prop="item_id" label="监控项ID" width="100" align="center">
+                </el-table-column>
+                <el-table-column prop="rule_name" label="规则名称" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="key_name" label="告警键值" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="upper_limit" label="上限值" width="100" align="center">
+                </el-table-column>
+                <el-table-column prop="lower_limit" label="下限值" width="100" align="center">
+                </el-table-column>
+                <el-table-column prop="alert_title" label="告警标题" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="alert_content" label="告警内容" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="create_time" label="创建时间" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="creator" label="创建人" width="100" align="center">
+                </el-table-column>
+                <el-table-column prop="edit_time" label="修改时间" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="editor" label="修改人" width="100" align="center">
+                </el-table-column>
+                <el-table-column prop="operation" label="操作" width="200" align="center" fixed="right">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small" @click="alertRuleEdit(scope.row.id)">编辑</el-button>
+                        <el-button type="text" size="small" @click="alertRuleDelete(scope.row.id)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <el-pagination :page-count="alertRulesCount" :current-page="currentPage" background layout="prev, pager, next" style="float:right" @current-change="alertRulePageChange"></el-pagination>
+        </div>
+        <!--数据添加/修改-->
+        <div v-if="alertRuleTableStatus == 'add' || alertRuleTableStatus == 'edit'">
+            <el-row>
+                <el-col :span="24">
+                    <div style="font-weight: bold">告警规则添加</div>
+                    <hr>
+                </el-col>
+            </el-row>
+            <el-form :rules="rules" :model="alertRuleData" ref="alertRuleData" label-position="right" label-width="100px">
+                <el-row>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="监控项ID:" prop="item_id">
+                            <el-select v-model="alertRuleData.item_id" filterable placeholder="请选择">
+                                    <el-option
+                                            v-for="item in item_ids"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                    </el-option>
+                                </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="规则名称:" prop="rule_name">
+                            <el-input v-model="alertRuleData.rule_name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="告警键值:" prop="key_name">
+                            <el-input v-model="alertRuleData.key_name"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="上限值:" prop="upper_limit">
+                            <el-input id="upperValue" v-model="alertRuleData.upper_limit"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="下限值:" prop="lower_limit">
+                            <el-input id="lowerValue" v-model="alertRuleData.lower_limit"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="11" :offset="1">
+                        <el-form-item label="告警标题:" prop="alert_title">
+                            <el-input v-model="alertRuleData.alert_title"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="23" :offset="1">
+                        <el-form-item label="告警内容:" prop="alert_content">
+                            <el-input type="textarea" :rows="10" v-model="alertRuleData.alert_content"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row class="alertRuleFormButton">
+                    <el-button @click="alertRuleList()">取 消</el-button>
+                    <el-button type="primary" @click="alertRuleSave('alertRuleData')">添加 / 修改</el-button>
+                </el-row>
+            </el-form>
+        </div>
+    </el-card>
+</div>
+</body>
+</html>

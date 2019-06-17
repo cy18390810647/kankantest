@@ -1,0 +1,311 @@
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=5,IE=9" ><![endif]-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>数据库读取流程并展示</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style type="text/css">
+		.flow {
+		  stroke-dasharray: 8;
+		  animation: dash 0.5s linear;
+		  animation-iteration-count: infinite;
+		}
+		@keyframes dash {
+		  to {
+		    stroke-dashoffset: -16;
+		  }
+		}
+	</style>
+	<script type="text/javascript">
+		var static_url = "${STATIC_URL}";
+        var site_url = "${SITE_URL}";
+	</script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Init.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/jscolor/jscolor.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/sanitizer/sanitizer.min.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/../../../src/js/mxClient.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Graph.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Format.js"></script>
+	<script type="text/javascript" src="${STATIC_URL}js/mxgraph/examples/grapheditor/www/js/Shapes.js"></script>
+    <script type="text/javascript" src="${STATIC_URL}js/jquery-1.10.2.min.js"></script>
+</head>
+	<script type="text/javascript">
+		// Extends EditorUi to update I/O action states based on availability of backend
+        //默认取轮播数据的时间间隔为10秒
+        let interval = 10;
+        let get_data_stop = null;
+		var graph =null;
+		var data_xml= '${data}'
+        let id = getUrlParam('id');
+        function main(container){
+			graph = new mxGraph(container);
+			graph.setTooltips(true);
+			graph.setEnabled(false);
+			load_Data();
+		}
+		function getUrlParam(name) {
+            //构造一个含有目标参数的正则表达式对象
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            //匹配目标参数
+            var r = window.location.search.substr(1).match(reg);
+            //返回参数值
+            if (r != null) return unescape(r[2]); return null;
+        }
+		function get_time_interval(){
+            axios({
+                method: 'post',
+                data:{
+                    code:"wheel_data_cycle"
+                },
+              url:  '${SITE_URL}monitor_scene/open_scene_design/',
+            }).then((res) => {
+                if(res && res.data && res.data.time_interval && res.data.time_interval != ""){
+                    let reg = /^\+?[1-9][0-9]*$/;
+                    if(reg.test(res.data.time_interval)){
+                        if(res.data.time_interval != interval){
+                            interval = res.data.time_interval;
+                            //清空定时任务
+                            clearInterval(get_data_stop);
+                            //重新启动定时任务
+                            get_data_stop = setInterval(load_Data,interval*1000);
+                        }
+                    }
+                }
+            })
+            }
+		get_data_stop = setInterval(load_Data,interval*1000)
+		//便于采集数据
+        function load_Data(){
+		    if(data_xml!=""&&data_xml!="None"){
+			    var doc = mxUtils.parseXml(data_xml);
+                var codec = new mxCodec(doc)
+                try{//将xml中的节点转换成svg，在浏览器渲染
+                    codec.decode(doc.documentElement, graph.getModel());
+                }catch (e) {
+
+                }
+                var model = graph.getModel();
+                var param = ""
+                var param_map={} //根据监控项id查询组件id
+                for(key_index in model.cells){
+                    var cell = model.cells[key_index];
+                    if(cell.value!=undefined
+                            &&typeof(cell.value) == "object"){
+                        if(param!=""){
+                            param+="&";
+                        }
+                        if(param_map[cell.value.getAttribute("item_id")] != undefined){
+                            continue;
+                        }
+                        param_map[cell.value.getAttribute("item_id")] = cell.id;
+                        param +="id="+ cell.value.getAttribute("item_id");
+                        //cell.value = cell.value.getAttribute("item_id")+"_"+cell.id
+                    }
+                }
+                $.ajax({
+                    url:"${SITE_URL}monitor_scene/query_scene_item_data?"+param
+                    ,async:false
+                    ,dataType:"json"
+                    ,success:function(data){
+                        var ifr_data = document.getElementsByTagName("iframe");
+                        if(ifr_data.length>0){
+                            for(var i=0;i<ifr_data.length;i++){
+                               ifr_data[i].remove();
+                             //  document.body.parentElement.remove(ifr_data[i]);
+                            }
+                        }
+                        if(data.message!=""){
+                            var data_json = eval('('+data.message+')');
+                            //darr[0]["key_name"].split(/[\r\n]/)
+                            for(var temp_num in data_json){
+                                var temp_dto= data_json[temp_num];//获取对象
+                                if(temp_dto["item_type"] == 2){ //为图表监控
+                                    graph.getModel().cells[param_map[temp_dto["id"]]].attribute
+                                       = temp_dto["key_name"]
+                                    continue;
+                                }
+                                // var str_val = temp_dto["key_name"].split(/[\r\n]/);
+                                var  calc_key = "";
+                                if(temp_dto["key_val"].indexOf("@")>-1){
+                                    calc_key = "@";
+                                }else if(temp_dto["key_val"].indexOf("#")>-1){
+                                    calc_key = "#";
+                                }else if(temp_dto["key_val"].indexOf("%")>-1){
+                                    calc_key = "%";
+                                }
+                                if(calc_key == ""){
+                                    continue;
+                                }
+                                var  calc_data = temp_dto["key_val"].split(calc_key);
+                                if(calc_key=="#"){//文本框内容设置颜色
+                                    var color_val = calc_data[1];
+                                    if(calc_data.length>2){
+                                        color_val = temp_dto["key_val"].split(calc_key)[1];
+                                    }
+                                    var color_cell =graph.getModel().cells[param_map[temp_dto["id"]]]
+                                    color_cell.value = "";
+                                    graph.setCellStyles(mxConstants.STYLE_FILLCOLOR,
+                                       '#'+color_val, [color_cell]);
+                                }else if(calc_key == "@"){
+                                    var txt = calc_data[1]
+                                    var cell_dto =graph.getModel().cells[param_map[temp_dto["id"]]];
+                                    if(txt.indexOf("[")>-1){
+                                        txt = txt.split("[")[0]
+                                    }
+                                    cell_dto.value= getNewline(txt);//取出数据,超过20个字符就折行
+                                    if(temp_dto["key_val"].indexOf("@") == 0){
+                                         graph.setCellStyles(mxConstants.STYLE_FILLCOLOR,
+                                       '#cecece', [cell_dto]);
+                                    }else if(temp_dto["key_val"].indexOf("db@") == 0){
+                                         var color_str ="#cecece";
+                                         var txt_str = calc_data[1]
+                                             .replace(txt,"").replace("[","")
+                                             .replace("]","");
+                                         if(txt_str == "1"){
+                                             color_str ="#7CFC00";
+                                         }
+                                       graph.setCellStyles(mxConstants.STYLE_FILLCOLOR,
+                                       color_str, [cell_dto]);
+                                    }
+                                }else if(calc_key == "%"){
+                                     graph.getModel().cells[param_map[temp_dto["id"]]].value
+                                                   = temp_dto["key_val"];//取出数据
+                                }
+                            }
+                        }
+                    }
+                })
+                var model = graph.getModel();
+                for(key_index in model.cells) {
+                    var cell = model.cells[key_index];
+                    if(typeof(cell.value) == "object"){
+                        cell.value ="";
+                    }
+                }
+                graph.refresh(); //刷新容器
+                for(key_index in model.cells){
+				   var cell = model.cells[key_index];
+				   if(cell.style != undefined&&
+				      cell.style.indexOf("edgeStyle=orthogonalEdgeStyle")>-1){
+				       lineFlow(model,graph,key_index);
+                   }
+				   if(cell.attribute!="" && cell.attribute && cell.parent.geometry){
+                       var x = cell.parent.geometry.x;
+                       var y = cell.parent.geometry.y;
+                       var ifr = document.createElement("iframe");
+                      // var ifr= document.getElementById("ifr_t");
+                       ifr.id="ifr"+Math.floor(Math.random()*100000+1);
+                       ifr.style.left=x+"px";
+                       ifr.style.top= y+"px";
+                       ifr.style.width = (cell.parent.geometry.width+8)+"px";
+                       ifr.style.height= (cell.parent.geometry.height+8)+"px";
+                       ifr.style.position="absolute";
+                       ifr.style.backgroundColor = "black";
+                       ifr.src = cell.attribute;
+                       ifr.style.display="block";
+                       document.body.appendChild(ifr);
+                       continue;
+                   }
+                }
+            }else{
+			    document.body.innerHTML = '<center style="margin-top:10%;">Error loading resource files. Please check browser console.</center>';
+            }
+        }
+		//监控项特效
+        function monitorFlow(model,graph,id,id1) {
+            var cell = model.getCell(id);//拿xml中对象id
+            var cell1 = model.getCell(id1);//拿xml中对象id
+            var color = '';var txtCpu = '';var txtNet='';//模拟指标与颜色
+            var rnd = Math.random() * 4;
+            if (rnd > 3)
+            {
+                color = '#f8cecc';
+                txtCpu = 'CPU:100%';
+                txtNet = '流量;10M/S';
+            }
+            else if (rnd > 2)
+            {
+                color = '#fff2cc';
+                txtCpu = 'CPU:50%';
+                txtNet = '流量;5M/S';
+            }
+            else if (rnd > 1)
+            {
+                color = '#d4e1f5';
+                txtCpu = 'CPU:10%';
+                txtNet = '流量;1M/S';
+            }
+            else {
+                color = '#e0f5d7';
+                txtCpu = 'CPU:1%';
+                txtNet = '流量;1M/S';
+            }
+
+            cell.value = txtNet;
+            //cell1.value = txtNet;
+            graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, 'white', [cell]);
+            graph.removeCellOverlays(cell);
+
+            graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, color, [cell]);
+            graph.addCellOverlay(cell, createOverlay(graph.warningImage, 'State: '+color));
+
+        }
+		//线条流动特效
+		function lineFlow(model,graph,id) {
+            var e2 =  model.getCell(id);//拿xml中对象id
+            var state = graph.view.getState(e2);
+            if(state !=undefined){
+                state.shape.node.getElementsByTagName('path')[0].removeAttribute('visibility');
+                state.shape.node.getElementsByTagName('path')[0].setAttribute('stroke-width', '6');
+                state.shape.node.getElementsByTagName('path')[0].setAttribute('stroke', 'lightGray');
+                state.shape.node.getElementsByTagName('path')[1].setAttribute('class', 'flow');            }
+            }
+
+		//警告图标闪烁特效
+        function createOverlay(image, tooltip)
+		{
+			var overlay = new mxCellOverlay(image, tooltip);
+			overlay.addListener(mxEvent.CLICK, function(sender, evt)
+			{
+				mxUtils.alert(tooltip + '\nLast update: ' + new Date());
+			});
+			return overlay;
+		};
+		function getNewline(val) {
+            var str = new String(val);
+            //存在换行符就直接返回
+            if(str.indexOf("\n") != -1){
+                return val;
+            }
+            var bytesCount = 0;
+            var s="";
+            for (var i = 0 ,n = str.length; i < n; i++) {
+                var c = str.charCodeAt(i);
+                //统计字符串的字符长度
+                if ((c >= 0x0001 && c <= 0x007e) || (0xff60<=c && c<=0xff9f)) {
+                    bytesCount += 1;
+                } else {
+                    bytesCount += 2;
+                }
+                //换行
+                s += str.charAt(i);
+                if(bytesCount>=22){
+                    s = s + '\n';
+                    //重置
+                    bytesCount=0;
+                }
+            }
+            return s;
+        }
+
+	</script>
+<!-- Page passes the container and control to the main function -->
+<body onload="main(document.getElementById('graphContainer'));">
+	<!-- Acts as a container for the graph -->
+	<div id="graphContainer" style="overflow:hidden;position:relative;width:861px;height:1100px;cursor:default;">
+	</div>
+    <iframe id="ifr_t" style="display:none" src="" width="450" height="320" frameborder="0"></iframe>
+   <br>
+</body>
+</html>

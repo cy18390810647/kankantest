@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>看板系统首页</title>
+    <!-- 开发环境版本，包含了有帮助的命令行警告--2.5.51 ${STATIC_URL}assets/-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/vue.development.js"></script>
+    <!-- 生产环境版 本，优化了尺寸和速度 功能完善后请将vue.development.js该为vue.js-->
+    <!--<script src="${STATIC_URL}assets/vue-2.5.21/vue.js"></script>-->
+    <!-- element UI引入样式 -->
+    <link href="${STATIC_URL}assets/element-2.4.11/index.css" rel="stylesheet">
+    <!-- element UI引入组件库 -->
+    <script src="${STATIC_URL}assets/element-2.4.11/index.js"></script>
+    <!-- vue的ajax依赖-->
+    <script src="${STATIC_URL}assets/vue-2.5.21/axios.min.js"></script>
+    <!--jQuery库使用时请使用标准jQuery语法-->
+    <!--<script src="${STATIC_URL}assets/jquery/jquery-3.1.1.min.js"></script>-->
+    <!--页面初始化css(Tencent)-->
+    <link href="${STATIC_URL}css/common/init.css" rel="stylesheet">
+    <!--本页面css-->
+    <link href="${STATIC_URL}css/common/main.css" rel="stylesheet">
+    <!--阿里巴巴矢量图标库--项目完成后请下载css并下载css引用的字体文件-->
+    <link href="${STATIC_URL}css/net/font_997278_ptr5bdmor4j.css" rel="stylesheet">
+    <link href="${STATIC_URL}assets/iconfont/iconfont.css" rel="stylesheet">
+    <script src="${STATIC_URL}js/jquery-3.1.1.min.js"></script>
+    <!--以下为后台参数-->
+    <!--
+    "${SITE_URL}";	        // app的url前缀,在ajax调用的时候，应该加上该前缀
+    "${STATIC_URL}";       // 静态资源前缀
+    **/--->
+</head>
+
+ <style type="text/css">
+
+.el-menu-item:hover{
+    outline: 0 !important;
+    background-color: #2860FD !important;
+}
+
+ .el-submenu__title:hover{
+      outline: 0 !important;
+        background-color: #2860FD !important;
+
+ }
+     /*菜单关闭*/
+.el-submenu>.el-submenu__title .el-submenu__icon-arrow{
+	-webkit-transform: rotateZ(-90deg);
+	-ms-transform: rotate(-90deg);
+	transform: rotateZ(-90deg);
+    font-size: 15px;
+    font-weight: bold;
+    color: #FFFFFF;
+}
+/*菜单展开*/
+.el-submenu.is-opened>.el-submenu__title .el-submenu__icon-arrow{
+	-webkit-transform: rotateZ(0deg);
+	-ms-transform: rotate(0deg);
+	transform: rotateZ(0deg);
+    font-size: 15px;
+    font-weight: bold;
+    color: #FFFFFF;
+}
+     .left_submenu{
+         padding-left: 30px;
+     }
+    /*jlq-2019-05-17-add-首页高度样式*/
+     ::-webkit-scrollbar{
+        display:none;
+     }
+     .ifa {
+        width: 100%;
+       /* min-height: 1400px;
+        height: auto;*/
+       height: 100%;
+    }
+     /*.el-container{
+         height:694px;
+     }*/
+
+     .el-menu {
+        background: #283593;
+        box-shadow: 2px 2px 8px 0 rgba(3, 21, 41, 0.10);
+        height: 100%;
+    }
+     .el-row {
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        position: relative;
+    }
+
+  </style>
+
+<body style="overflow: visible"  >
+<!--start html-->
+<div id="main" style="height: 100%;">
+    <!--start container -->
+    <el-container >
+
+        <!--start left  -->
+        <el-row  :style="height">
+            <el-menu :style="height" class="el-menu-vertical-demo" @open="handleOpen"  unique-opened=true
+                     @close="handleClose" :collapse="isCollapse" text-color="#FFFFFF" active-text-color="#000000" >
+                <el-menu-item index="1000" class="title_item">
+                     <li slot="title" style="font-size: 24px;" id="li" contenteditable="true" onblur="vm.boardEvent()">{{ board }}</li>
+                </el-menu-item>
+
+             <!--   <el-menu-item v-for="(i,index) in muenus" :index="index+''" style="line-height: 56px;font-size: 18px;"
+                              v-on:click="testClick(i.url)">
+                    <i class="iconfont icon-zhuye"></i>
+                    <span slot="title">{{ i.mname }}{{ i.id }}</span>
+                </el-menu-item>
+                -->
+                 <el-submenu  v-for="(i,index) in muenus"  :index="index+''"  style="font-color:#FFFFFF;line-height: 56px; "  v-if=" i.id == 1" >
+                     <template slot="title" >
+                         <i :class="i.mImg " :style= "left_submenu"></i>
+                      <span  v-if=" i.id == 1" > &nbsp;<font color="#FFFFFF" style="font-size: 16px;">{{ i.mname }}</font></span>
+                    </template>
+                    <el-menu-item-group>
+                      <el-menu-item style="line-height: 40px;font-size: 15px;padding-left:70px;" index="1-1" v-for="(i,index) in muenus"  :index="index+''" v-on:click="testClick(i.url)" v-if=" i.pcode == 4"> <i :class="i.mImg "></i>&nbsp;<span slot="title" >{{ i.mname }}</span></el-menu-item>
+                    </el-menu-item-group>
+
+                  </el-submenu>
+
+                <el-menu-item id="submenu" v-for="(i,index) in muenus"  :index="index+''"  style="line-height: 56px;font-size: 16px;padding-left:50px;" v-if=" i.pcode == 0" v-on:click="testClick(i.url)" >
+                    <i :class="i.mImg "></i>
+                    <span slot="title" >{{ i.mname }}</span>
+                </el-menu-item>
+
+
+
+                 <el-submenu  v-for="(i,index) in muenus"  :index="index+''"  style="font-color:#FFFFFF;line-height: 56px; "  v-if=" i.id == 25" >
+                     <template slot="title" >
+                         <i :class="i.mImg " :style= "left_submenu"></i>
+                      <span  v-if=" i.id == 25" > &nbsp;<font color="#FFFFFF" style="font-size: 16px;">{{ i.mname }}</font></span>
+                    </template>
+                    <el-menu-item-group>
+                      <el-menu-item style="line-height: 40px;font-size: 15px;padding-left:70px;" index="1-1" v-for="(i,index) in muenus"  :index="index+''" v-on:click="testClick(i.url)" v-if=" i.pcode == 1"> <i :class="i.mImg "></i>&nbsp;<span slot="title" >{{ i.mname }}</span></el-menu-item>
+                    </el-menu-item-group>
+
+                  </el-submenu>
+                <el-submenu style="font-color:#FFFFFF;" v-for="(i,index) in muenus"  :index="index+''"  style="line-height: 56px; "  v-if=" i.id == 26">
+                     <template slot="title" >
+                            <i :class="i.mImg " :style= "left_submenu"></i>
+                      <span  v-if="  i.id == 26" > &nbsp;<font color="#FFFFFF" style="font-size: 16px;">{{ i.mname }}</font></span>
+                    </template>
+                    <el-menu-item-group>
+                      <el-menu-item style="line-height: 40px;font-size: 15px;padding-left:70px;" index="1-1" v-for="(i,index) in muenus"  :index="index+''" v-on:click="testClick(i.url)" v-if=" i.pcode == 2"> <i :class="i.mImg "></i>&nbsp;<span slot="title" >{{ i.mname }}</span></el-menu-item>
+                    </el-menu-item-group>
+
+                  </el-submenu>
+
+                <el-submenu style="font-color:#FFFFFF;" v-for="(i,index) in muenus"  :index="index+''" v-on:click="testClick(i.url)" style="line-height: 56px; "  v-if=" i.id == 27">
+                     <template slot="title" >
+                         <i :class="i.mImg " :style= "left_submenu"></i>
+                      <span  v-if="  i.id == 27">&nbsp;<font color="#FFFFFF" style="font-size: 16px;">{{ i.mname }}</font></span>
+                    </template>
+                    <el-menu-item-group>
+                      <el-menu-item style="line-height: 40px;font-size: 15px;padding-left:70px;" index="1-1" v-for="(i,index) in muenus"  :index="index+''" v-on:click="testClick(i.url)" v-if=" i.pcode == 3"> <i :class="i.mImg "></i>&nbsp;<span slot="title" >{{ i.mname }}</span></el-menu-item>
+                    </el-menu-item-group>
+
+                  </el-submenu>
+
+                <div index="10000" style="line-height: 56px;margin-left: 20px;position: absolute;bottom: 0;">
+                    <i class="el-icon-question"></i>
+                    <span slot="title"><a href="#">帮助</a></span>
+                </div>
+            </el-menu>
+        </el-row>
+        <!--end left-->
+
+        <!--start right-->
+        <el-container>
+            <!--start right header-->
+            <el-header class="header_item" height="62px">
+                <el-row :gutter="20">
+                    <el-col :span="6">
+                        <i class="el-icon-d-arrow-left" :style="display1" @click="changeCollapse"
+                           style="color: #555759;font-size: 20px;margin-top: 5px;"></i>
+                        <i class="el-icon-d-arrow-right" :style="display2" @click="changeCollapse"
+                           style="color: #555759;font-size: 20px;"></i>
+                        <span style="color: #555759; font-size: 16px; etter-spacing: 0.23px;">当前业务:</span>
+                        <span style="color: #555759; etter-spacing: 0.23px;">{{ business.name }}</span>
+                    </el-col>
+                    <el-col :span="6" :offset="12" style="color: #000;">
+                        <div style="float: right">
+                            <span style="color: #555759; etter-spacing: 0.23px;">当前用户：</span>
+                            <span style="color: #555759; etter-spacing: 0.23px;">{{ user.name }}</span>
+                            <el-dropdown :hide-on-click="false"  @command="logout">
+                                <span class="el-dropdown-link">
+                                  &nbsp;&nbsp;|&nbsp;帮助中心<i class="el-icon-caret-bottom el-icon--right"></i>
+                                </span>
+                                <el-dropdown-menu slot="dropdown">
+                                    <el-dropdown-item command="a">注销</el-dropdown-item>
+                                </el-dropdown-menu>
+                            </el-dropdown>
+                        </div>
+                    </el-col>
+                </el-row>
+            </el-header>
+            <!--end right header-->
+            <!--start right body-->
+            <el-main>
+                <template>
+                    <div id="app" style="height: 100%;">
+                            <iframe  v-show="isarr" class="ifa" scrolling=auto
+                            :src="clickhtml"
+                            frameborder="0"></iframe>
+                    </div>
+                </template>
+            </el-main>
+            <!--end right body-->
+        </el-container>
+        <!--end right-->
+
+    </el-container>
+    <!--end container-->
+</div>
+<!--end html-->
+
+<script type="text/javascript">
+
+    function test(){
+        alert("hhhhhh")
+    }
+
+
+     axios.interceptors.request.use((config) => {
+        config.headers['X-Requested-With'] = 'XMLHttpRequest';
+        let regex = /.*csrftoken=([^;.]*).*$/; // 用于从cookie中匹配 csrftoken值
+        config.headers['X-CSRFToken'] = document.cookie.match(regex) === null ? null : document.cookie.match(regex)[1];
+        return config
+    });
+    let vm = new Vue({
+        el: '#main',
+        data: {
+            muenus: [],
+            showFlag:false,
+            isCollapse: false,  //是否折叠
+            left_submenu:'padding-left: 30px;',
+
+            height: {           //css
+                height: '',
+            },
+            display1: {
+                display: 'inline-block',
+            },
+            display2: {
+                display: 'none',
+            },
+            business: {         //业务数据
+                name: "看板项目",
+            },
+            user: {             //用户数据
+                name: "",
+            },
+
+            clickhtml:'',
+            isarr:true,
+            board:'',
+            /**activeName: 'first',//默认iframe选项
+             ifArr: {            //所有iframe页面，保留一个为true，其余均为false
+                first: true,
+                second: false,
+                third: false
+            }**/
+
+
+        },
+        created() {
+            //this.get_height()
+        },
+        methods: {
+             handleOpen(key, keyPath) {  //手风琴打开
+                console.log(key, keyPath);
+            },
+            handleClose(key, keyPath) { //手风琴关闭
+                console.log(key, keyPath);
+            },
+
+            //退出登录
+            logout(){
+                axios.get('${SITE_URL}position/get_logout_address').then((res)=>{
+                    //从配置文件获取退出登录地址
+                    var login_address = res.data.message;
+                    window.location.href=login_address;
+                });
+            },
+            changeCollapse() {          //更改伸缩状态
+                let res = this.isCollapse;
+                if (res) {
+                    this.display1.display = 'inline-block';
+                    this.display2.display = 'none';
+
+                    this.left_submenu = 'padding-left: 30px;';
+                } else {
+                    this.display1.display = 'none';
+                    this.display2.display = 'inline-block';
+                    this.left_submenu = '';
+                }
+                this.isCollapse = res ? false : true;
+            },
+            get_user_name(){
+                axios.post('${SITE_URL}position/get_active_user').then((res)=>{
+                    vm.user.name=res.data.bk_username;
+                });
+            },
+            testClick(res) {            //更新iframe显示页面
+                 if(res == 'network_panorama/' || res == 'content/' || res == 'trace_panorama/'|| res == 'ywzl_panorama/'|| res == 'kpi_panorama/'|| res == 'scene_carousel/'){
+                    window.open(res)
+                 }
+                 else if(res == 'grafanamonitor/'){
+                     window.open('https://dev.gtjatest.com:3000');
+                 }
+                 else{
+                     vm.clickhtml = res
+                 }
+                console.log(this.clickhtml)
+             },
+
+            //获取角色对应的所有菜单名称
+            get_Muenu() {
+                axios.post('${SITE_URL}db_connection/get_user_muenu/')
+                    .then((res) => {
+                        console.log(res);
+                        vm.muenus = res.data.results;
+                        for(let i=0;i<vm.muenus.length;i++){
+                            if(vm.muenus[i].pcode == 4 && vm.muenus[i].mname.indexOf('首页')>-1){
+                                vm.clickhtml = '${SITE_URL}'+vm.muenus[i].url;
+                            }
+                        }
+
+                    })
+            },
+            boardEvent(){
+               //  alert(123456);
+                 vm.board = document.getElementById("li").innerHTML
+                 axios.post(
+                   '${SITE_URL}system_config/update_board/'+vm.board+'/'
+                 /*axios({
+                  url:  '${SITE_URL}system_config/update_board/',
+                  method: 'post',
+                  data: {board:vm.board},*/
+                 ).then((res) => {
+                   if(res.data.message==''){
+                      // this.$message('修改成功')
+                   }
+                });
+            },
+            get_board() {
+                axios.post('${SITE_URL}system_config/selectBoard/')
+                    .then((res) => {
+                        console.log(res)
+                        vm.board = res.data.message;
+                    })
+            },
+
+        }
+    });
+    function get_menu(){
+        vm.get_Muenu()
+    }
+    vm.get_Muenu();
+    vm.get_user_name();
+    vm.get_board();
+</script>
+</body>
+</html>
