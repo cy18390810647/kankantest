@@ -203,10 +203,13 @@
         </el-row>
         <!--情况展示-->
         <el-row :gutter="10" style="margin: 0 0 20px 0;background: rgb(255,255,255);">
-            <el-col v-for="(i,index) in system_run_data" :key="index" :span="3" style="margin: 20px auto">
-                <span class="span_style" :class="i.color">{{ i.name }}</span>
-            </el-col>
+            <el-col v-for="(i,index) in system_run_data" :key="index" :span="3" style="margin: 20px auto" >
+                <el-tooltip placement="top">
+                        <div slot="content" v-html="i.content"></div>
+                        <span class="span_style" :class="i.color"  id="alert_detail">{{ i.name }}</span>
 
+                </el-tooltip>
+            </el-col>
         </el-row>
         <!--告警-->
         <el-row class="row_shadow" style="margin-bottom: 10px;">
@@ -405,12 +408,13 @@
                 ],
             value2: '-1',
             alertTypeOpt:[
-                {value:"-1",label:"全部"},
-                {value:"NOBROKER",label:"告警"},
-                {value:"PROBLEM",label:"通知"},
-                {value:"OK",label:"恢复"},
+                {value:"0",label:"未分类"},
+                {value:"1",label:"极高"},
+                {value:"2",label:"高"},
+                {value:"3",label:"中"},
+                {value:"4",label:"低"},
             ],
-            alertTypeVal:'-1', //警告类别
+            alertTypeVal:'0', //警告类别
             alertTimeOpt:[
                 {value:5,label:"5分钟"},
                 {value:15,label:"15分钟"},

@@ -123,7 +123,7 @@ def query_alert_data(req):
     if alertLevel!=None and alertLevel!="-1":
         data = AlertInfo.objects\
             .filter(Q(scene_id__isnull=True) | Q(scene_id__in=pos_ids)) \
-            .filter(alert_status_code=alertLevel)\
+            .filter(alert_level_code=alertLevel)\
             .filter(alert_time__gte=time_str)
     else:
         data = AlertInfo.objects\
@@ -298,6 +298,17 @@ def select_All(request):
         # 正在执行的场景
         if cur_time >= start_time and cur_time <= end_time:
             my_dict["name"] = str(scene_obj[1]) + "(分值：" + str(scene_obj[7]) + ")"
+            my_dict["id"] = str(scene_obj[0])
+            result_li = select_alert(str(scene_obj[0]))
+            content = '';
+            j = 0
+            for i in result_li:
+                j = j + 1
+                content = content + "告警名称：" + i.get("name") + "  告警状态：" + i.get("status_name") +"&emsp;"
+                if (j % 2 == 0):
+                    content = content + "<br>"
+            my_dict["content"] = content
+            print content
             # 第7个值为场景的得分值
             if float(scene_obj[7]) >= 90 and float(scene_obj[7]) < 100:
                 my_dict["color"] = "yellow"
@@ -313,11 +324,33 @@ def select_All(request):
             my_dict["name"] = str(scene_obj[1]) + "(未执行)"
             my_dict["color"] = "gray"
             my_dict["sort"] = "4"
+            my_dict["id"] = str(scene_obj[0])
+            result_li = select_alert(str(scene_obj[0]))
+            content = '';
+            j = 0
+            for i in result_li:
+                j = j + 1
+                content = content + "告警名称：" + i.get("name") + "  告警状态：" + i.get("status_name")+"&emsp;"
+                if (j % 2 == 0):
+                    content = content + "<br>"
+            my_dict["content"] = content
+            print content
         # 当前时间大于场景结束时间，也算未执行的场景
         if cur_time > end_time:
             my_dict["name"] = str(scene_obj[1]) + "(未执行)"
             my_dict["color"] = "gray"
             my_dict["sort"] = "4"
+            my_dict["id"] = str(scene_obj[0])
+            result_li = select_alert(str(scene_obj[0]))
+            content = '';
+            j = 0
+            for i in result_li:
+                j = j + 1
+                content = content + "告警名称：" + i.get("name") + "  告警状态：" + i.get("status_name")+"&emsp;"
+                if (j % 2 == 0):
+                    content = content + "<br>"
+            my_dict["content"] = content
+            print content
         result_list.append(my_dict)
     result_scene = tools.success_result(result_list)
     return result_scene
@@ -349,3 +382,23 @@ def get_every_scene_health_degree(user_id):
     cursor.close()
     return res
 
+def select_alert(id):
+    """
+    获取当前用户下每一个场景的健康度
+    :param user_id:
+    :return:
+    """
+    select_alert_sql= "SELECT alert_txt,alert_time,alert_status_name from td_alert_info where scene_id = "+id
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(select_alert_sql)
+    res = cursor.fetchall()
+    cursor.close();
+    result_list = [];
+    dict = {};
+    for alert in res:
+        dict["name"] = alert[0];
+        dict["status_name"] = alert[2];
+        if(datetime.datetime.now().year == alert[1].year and datetime.datetime.now().month == alert[1].month and datetime.datetime.now().day == alert[1].day):
+            result_list.append(dict)
+    return result_list;
