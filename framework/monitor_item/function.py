@@ -17,7 +17,7 @@ from gather_data.function import gather_data, get_db
 from gather_data.models import TDGatherData
 import sys
 from logmanagement.function import add_log, make_log_info, get_active_user
-import datetime
+from datetime import datetime
 from market_day.models import HeaderData as hd
 from settings import BK_PAAS_HOST
 from django.db import transaction
@@ -277,7 +277,14 @@ def delete_unit(request):
         unit_id = res['unit_id']
         monitor_name = res['monitor_name']
         Monitor.objects.filter(id=unit_id).delete()
-        co.delete_task(unit_id)
+        """
+        # 删除监控项需要删除该监控项的celery调度任务和子任务
+        # 否则子任务会一直执行到监控项的结束时间，占用系统资源
+        # 而且会出现监控项都已经删除了监控项的数据采集却还在继续
+        # 的灵异事件
+        """
+        co.delete_task(str(unit_id))
+        co.delete_task(str(unit_id) + "task")
         result = tools.success_result(None)
         # 修改获取用户的方式，直接从request中获取
         info = make_log_info(u'删除监控项', u'业务日志', u'Monitor', sys._getframe().f_code.co_name,
@@ -351,6 +358,8 @@ def add_unit(request):
                 function.add_unit_task(add_dicx=add_flow_dic)
             else:
                 function.add_unit_task(add_dicx=add_dic)
+            # 初始创建的监控项celery任务默认为挂起
+            co.disable_task(str(last_node.id))
             result = tools.success_result(None)
             result['item_id'] = last_node.id
             # 修改获取用户的方式，直接从request中获取
@@ -418,9 +427,20 @@ def edit_unit(request):
             add_dic['node_times'] = node_times
             add_dic['constants'] = constants
         add_dic['monitor_type'] = monitor_type
+        """ 
         # 添加定时任务监控要求本地安装任务调度软件rabitmq
-        # 正式环境服务器一般带有这个调度软件，如果没有就要安装
+        # 正式环境与测试环境服务器一般带有这个调度软件（如果没有就要安装）
+        # 先清除celery任务与子任务
+        # 这里需要注意，只有先清除任务再创建一个新的任务celery调度才能生效
+        # 直接修改原有任务，celery调度不能生效，多次验证得出的结论
+        """
+        co.delete_task(str(id))
+        co.delete_task(str(id)+"task")
+        # 然后再创建新的celery任务
         function.add_unit_task(add_dicx=add_dic)
+        # 如果状态为0,则celery定时任务先挂起
+        if add_dic['status'] == '0':
+            co.disable_task(str(id))
         result = tools.success_result(None)
         # 修改获取用户的方式，直接从request中获取
         info = make_log_info(u'编辑监控项', u'业务日志', u'Monitor', sys._getframe().f_code.co_name,
@@ -490,10 +510,32 @@ def change_unit_status(req):
         mon = Monitor.objects.get(id=unit_id)
         mon.status = flag
         mon.save()
+        # 重新生效celery任务
         if flag == 1:
+            """
+            注意：
+            # 设置任务为可用同时（将挂起的任务重新生效）同时也要将子任务也设置为生效
+            # 否则主任务重新生效了，子任务却还在挂起状态
+            # 重启任务时还需要判断当前监控项的开始和结束时间，如果不在时间范围内就要挂起子任务
+            （就是子任务还是继续挂起）
+            """
+            strnow = datetime.strftime(datetime.now(), '%H:%M')
+            start_time = str(mon.start_time)
+            end_time = str(mon.end_time)
+            starttime = start_time.split(':')[0]+":"+start_time.split(':')[1]
+            endtime = end_time.split(':')[0]+":"+end_time.split(':')[1]
             co.enable_task(schename)
-        else:
+            # 在时间范围内才将挂起子任务重启，否则不处理
+            if strnow <= endtime and strnow >= starttime:
+                co.enable_task(schename + "task")
+        else: # 挂起celery任务
+            """
+            注意：
+            # 设置任务为不可用同时（将celery任务暂时挂起）同时也要将子任务也设置为挂起
+            # 否则子任务还会一直执行
+            """
             co.disable_task(schename)
+            co.disable_task(schename+"task")
         res = tools.success_result(None)
     except Exception as e:
         res = tools.error_result(e)
