@@ -16,6 +16,7 @@ from models import *
 from system_config.models import  *
 from db_connection.function import *
 from gather_data.models import TDGatherData
+from monitor_scene.hashmap import HashMap
 
 from monitor_item import function
 
@@ -124,11 +125,11 @@ def query_alert_data(req):
         data = AlertInfo.objects\
             .filter(Q(scene_id__isnull=True) | Q(scene_id__in=pos_ids)) \
             .filter(alert_level_code=alertLevel)\
-            .filter(alert_time__gte=time_str)
+            .filter(alert_time__gte=time_str).order_by('-alert_time')
     else:
         data = AlertInfo.objects\
             .filter(Q(scene_id__isnull=True)|Q(scene_id__in=pos_ids))\
-            .filter(alert_time__gte=time_str)
+            .filter(alert_time__gte=time_str).order_by('-alert_time')
     if data.count() > 0:
       #  res_data = data.values_list()
         if len(data) > 0:
@@ -303,10 +304,7 @@ def select_All(request):
             content = '';
             j = 0
             for i in result_li:
-                j = j + 1
-                content = content + "告警名称：" + i.get("name") + "  告警状态：" + i.get("status_name") +"&emsp;"
-                if (j % 2 == 0):
-                    content = content + "<br>"
+                content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
             print content
             # 第7个值为场景的得分值
@@ -329,10 +327,7 @@ def select_All(request):
             content = '';
             j = 0
             for i in result_li:
-                j = j + 1
-                content = content + "告警名称：" + i.get("name") + "  告警状态：" + i.get("status_name")+"&emsp;"
-                if (j % 2 == 0):
-                    content = content + "<br>"
+                content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
             print content
         # 当前时间大于场景结束时间，也算未执行的场景
@@ -345,10 +340,7 @@ def select_All(request):
             content = '';
             j = 0
             for i in result_li:
-                j = j + 1
-                content = content + "告警名称：" + i.get("name") + "  告警状态：" + i.get("status_name")+"&emsp;"
-                if (j % 2 == 0):
-                    content = content + "<br>"
+                content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
             print content
         result_list.append(my_dict)
@@ -363,18 +355,18 @@ def get_every_scene_health_degree(user_id):
     :return:
     """
     health_degree_every_scene_sql= "select e.scene_id,d.scene_name,CURRENT_TIME cur_time,d.scene_startTime,d.scene_endTime,e.source_score,e.end_score,e.health_degree " \
-                                   +"from (select a.scene_id,a.source_score,b.end_score,round((b.end_score/a.source_score)*100,2) health_degree from "\
+                                   +"from (select a.scene_id,a.source_score,IFNULL(b.end_score,0) end_score,round((IFNULL(b.end_score,0)/a.source_score)*100,2) health_degree from "\
                 "(select c.scene_id,sum(c.score) source_score from ("\
                 " select a.scene_id,b.id,b.score from tb_monitor_item b LEFT JOIN tl_scene_monitor a  on  b.id = a.item_id and a.scene_id in "\
                 " (SELECT scene_id FROM tl_position_scene WHERE position_id = ( SELECT user_pos_id FROM tb_user_info WHERE id = "+str(user_id)+")) "\
-                " ) c where c.scene_id is not null group by c.scene_id) a, "\
+                " ) c where c.scene_id is not null group by c.scene_id) a LEFT JOIN  "\
                 " (select c.scene_id,sum(c.score) end_score from ( "\
                 " select a.scene_id,b.item_id,b.score from "\
                 " (select DISTINCT a.item_id,IFNULL(a.score,0) score from td_gather_data a,tb_monitor_item b where a.item_id= b.id) b "\
                 " LEFT JOIN tl_scene_monitor a  on  b.item_id = a.item_id and a.scene_id in "\
                 " (SELECT scene_id FROM tl_position_scene WHERE position_id = ( SELECT user_pos_id FROM tb_user_info WHERE id = "+str(user_id)+")) "\
                 " ) c where c.scene_id is not null group by c.scene_id) b "\
-                " where a.scene_id = b.scene_id)e LEFT JOIN tb_monitor_scene d ON e.scene_id = d.id "
+                " on a.scene_id = b.scene_id)e LEFT JOIN tb_monitor_scene d ON e.scene_id = d.id "
     db = get_db()
     cursor = db.cursor()
     cursor.execute(health_degree_every_scene_sql)
@@ -382,23 +374,32 @@ def get_every_scene_health_degree(user_id):
     cursor.close()
     return res
 
+
 def select_alert(id):
     """
-    获取当前用户下每一个场景的健康度
+    获取每个场景当天告警信息的内容，同时去重
     :param user_id:
     :return:
     """
-    select_alert_sql= "SELECT alert_txt,alert_time,alert_status_name from td_alert_info where scene_id = "+id
+    select_alert_sql= "SELECT alert_txt,alert_time,alert_status_name,alert_status_code from td_alert_info where scene_id = "+id
     db = get_db()
     cursor = db.cursor()
     cursor.execute(select_alert_sql)
     res = cursor.fetchall()
     cursor.close();
     result_list = [];
-    dict = {};
+    alert_map = HashMap()
     for alert in res:
+        dict = {};
         dict["name"] = alert[0];
         dict["status_name"] = alert[2];
-        if(datetime.datetime.now().year == alert[1].year and datetime.datetime.now().month == alert[1].month and datetime.datetime.now().day == alert[1].day):
-            result_list.append(dict)
+        print alert[3]
+        # 这里只获取告警和当天的数据
+        if alert[3] == 'NOBROKER':
+            if(datetime.datetime.now().year == alert[1].year and datetime.datetime.now().month == alert[1].month and datetime.datetime.now().day == alert[1].day):
+                # 这里使用hashMap去重
+                if (alert_map.get(alert[0])) is not None:
+                    continue
+                alert_map.add(alert[0], alert[0])
+                result_list.append(dict)
     return result_list;
