@@ -607,7 +607,6 @@ def flow_change(request):
         if l['id'] == end_event['id']:
             end_event['x'] = l['x']
             end_event['y'] = l['y']
-
     activities2.append(start_event)
     activities2.append(end_event)
     activities = res1['activities']
@@ -714,9 +713,9 @@ def node_state_by_item_id(request):
 
 def verify_name_only(name,id):
     if(id!=0):
-        res=Monitor.objects.filter(Q(monitor_name=name)& ~Q(id=id))
+        res = Monitor.objects.filter(Q(monitor_name=name)&~Q(id=id))
     else:
-        res=Monitor.objects.filter(monitor_name=name)
+        res = Monitor.objects.filter(monitor_name=name)
     print res
     if res.count()==0:
         return True
