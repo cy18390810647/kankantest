@@ -82,7 +82,6 @@ def utc_to_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
     utc_dt = datetime.datetime.strptime(utc_time_str, utc_format)
     local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
     time_str = local_dt.strftime(local_format)
-    print time.mktime(time.strptime(time_str, local_format))
     return int(time.mktime(time.strptime(time_str, local_format)))
 
 
@@ -125,7 +124,6 @@ def wechat_access_token():
 
 # 微信公众号发送内容到指定openid用户
 def wechat_send_msg(access_token, openid, msg):
-    print "OPEN_ID: %s" % openid
     body = {
         "touser": openid,
         "msgtype": "text",
@@ -135,8 +133,6 @@ def wechat_send_msg(access_token, openid, msg):
     }
     unicode_str = json.dumps(body, ensure_ascii=False)
     utf8_str = unicode_str.encode('utf-8')
-    # print 'UNICODE: %s'% unicode_str
-    # print 'UTF8: %s' % utf8_str
     response = requests.post(
         url="https://api.weixin.qq.com/cgi-bin/message/custom/send",
         params={
@@ -146,18 +142,14 @@ def wechat_send_msg(access_token, openid, msg):
     )
     # 这里可根据回执code进行判定是否发送成功(也可以根据code根据错误信息)
     result = response.json()
-    print result
     if 0 == int(result['errcode']):
-        print "WeChat Message Send Success!"
         return None
     else:
-        print "WeChat Message Send Error: %s" % result['errmsg']
         return result['errmsg']
 
 
 # 微信公众号群发功能：只有服务号可用，订阅号不可用
 def wechat_batch_send_msg(access_token, openids, msg):
-    print "OPEN_IDS: %s" % openids
     body = {
         "touser": openids,
         "msgtype": "text",
@@ -167,8 +159,6 @@ def wechat_batch_send_msg(access_token, openids, msg):
     }
     unicode_str = json.dumps(body, ensure_ascii=False)
     utf8_str = unicode_str.encode('utf-8')
-    # print 'UNICODE: %s'% unicode_str
-    # print 'UTF8: %s' % utf8_str
     response = requests.post(
         url="https://api.weixin.qq.com/cgi-bin/message/mass/send",
         params={
