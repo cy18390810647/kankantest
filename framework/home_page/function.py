@@ -306,7 +306,7 @@ def select_All(request):
             for i in result_li:
                 content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
-            print content
+            # print content
             # 第7个值为场景的得分值
             if float(scene_obj[7]) >= 90 and float(scene_obj[7]) < 100:
                 my_dict["color"] = "yellow"
@@ -329,7 +329,7 @@ def select_All(request):
             for i in result_li:
                 content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
-            print content
+            # print content
         # 当前时间大于场景结束时间，也算未执行的场景
         if cur_time > end_time:
             my_dict["name"] = str(scene_obj[1]) + "(未执行)"
@@ -342,7 +342,7 @@ def select_All(request):
             for i in result_li:
                 content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
-            print content
+            # print content
         result_list.append(my_dict)
     result_scene = tools.success_result(result_list)
     return result_scene
