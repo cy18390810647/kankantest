@@ -609,3 +609,25 @@ ConnectionError: HTTPSConnectionPool(host='paas.blueking.com', port=443): Max re
 INFO [2019-06-15 11:06:47] C:\Users\X230\PycharmProjects\LanhuSaas\framework\account\accounts.py 95 verify_bk_login 14568 9224 
  	 验证用户登录token无效： 
 
+ERROR [2019-07-10 16:57:08] D:\Users\X230\lanhusaas\framework\account\http.py 65 _http_request 10400 10344 
+ 	 login http request error! type: GET, url: https://paas.blueking.com/login/accounts/is_login/, data: {'bk_token': 'w-H30AFlQrkECFz8MSNsz6y4UgBBp2JTH-ff7OI3Y_g'} 
+Traceback (most recent call last):
+  File "D:\Users\X230\lanhusaas\framework\account\http.py", line 53, in _http_request
+    resp = requests.get(url=url, headers=headers, params=data, verify=False)
+  File "D:\Python27\lib\site-packages\requests\api.py", line 67, in get
+    return request('get', url, params=params, **kwargs)
+  File "D:\Python27\lib\site-packages\requests\api.py", line 53, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "D:\Python27\lib\site-packages\requests\sessions.py", line 468, in request
+    resp = self.send(prep, **send_kwargs)
+  File "D:\Python27\lib\site-packages\requests\sessions.py", line 576, in send
+    r = adapter.send(request, **kwargs)
+  File "D:\Python27\lib\site-packages\requests\adapters.py", line 437, in send
+    raise ConnectionError(e, request=request)
+ConnectionError: HTTPSConnectionPool(host='paas.blueking.com', port=443): Max retries exceeded with url: /login/accounts/is_login/?bk_token=w-H30AFlQrkECFz8MSNsz6y4UgBBp2JTH-ff7OI3Y_g (Caused by NewConnectionError('<requests.packages.urllib3.connection.VerifiedHTTPSConnection object at 0x000000000D8F0128>: Failed to establish a new connection: [Errno 10060] ',))
+INFO [2019-07-10 16:57:08] D:\Users\X230\lanhusaas\framework\account\accounts.py 95 verify_bk_login 10400 10344 
+ 	 验证用户登录token无效： 
+
+INFO [2019-07-10 18:58:33] D:\Users\X230\lanhusaas\framework\account\accounts.py 95 verify_bk_login 8304 3880 
+ 	 验证用户登录token无效：login status has been logged out 
+

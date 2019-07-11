@@ -306,7 +306,6 @@ def select_All(request):
             for i in result_li:
                 content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
-            # print content
             # 第7个值为场景的得分值
             if float(scene_obj[7]) >= 90 and float(scene_obj[7]) < 100:
                 my_dict["color"] = "yellow"
@@ -329,7 +328,6 @@ def select_All(request):
             for i in result_li:
                 content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
-            # print content
         # 当前时间大于场景结束时间，也算未执行的场景
         if cur_time > end_time:
             my_dict["name"] = str(scene_obj[1]) + "(未执行)"
@@ -342,7 +340,6 @@ def select_All(request):
             for i in result_li:
                 content += "告警内容：" + i.get("name") + "  告警状态：" + i.get("status_name")+"<br/>"
             my_dict["content"] = content
-            # print content
         result_list.append(my_dict)
     result_scene = tools.success_result(result_list)
     return result_scene
@@ -393,7 +390,6 @@ def select_alert(id):
         dict = {};
         dict["name"] = alert[0];
         dict["status_name"] = alert[2];
-        # print alert[3]
         # 这里只获取告警和当天的数据
         if alert[3] == 'NOBROKER':
             if(datetime.datetime.now().year == alert[1].year and datetime.datetime.now().month == alert[1].month and datetime.datetime.now().day == alert[1].day):
