@@ -393,7 +393,7 @@ def select_alert(id):
         dict = {};
         dict["name"] = alert[0];
         dict["status_name"] = alert[2];
-        print alert[3]
+        # print alert[3]
         # 这里只获取告警和当天的数据
         if alert[3] == 'NOBROKER':
             if(datetime.datetime.now().year == alert[1].year and datetime.datetime.now().month == alert[1].month and datetime.datetime.now().day == alert[1].day):
