@@ -631,3 +631,91 @@ INFO [2019-07-10 16:57:08] D:\Users\X230\lanhusaas\framework\account\accounts.py
 INFO [2019-07-10 18:58:33] D:\Users\X230\lanhusaas\framework\account\accounts.py 95 verify_bk_login 8304 3880 
  	 验证用户登录token无效：login status has been logged out 
 
+ERROR [2019-07-12 09:12:12] E:\2\1\lanhusaas\framework\account\http.py 65 _http_request 11224 9516 
+ 	 login http request error! type: GET, url: https://paas.blueking.com/login/accounts/get_user/, data: {'bk_token': 'uH_swTKdaKRmR6ezpubqn28oHRdarV6cCGS3xppyXE0'} 
+Traceback (most recent call last):
+  File "E:\2\1\lanhusaas\framework\account\http.py", line 53, in _http_request
+    resp = requests.get(url=url, headers=headers, params=data, verify=False)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 67, in get
+    return request('get', url, params=params, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 53, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 468, in request
+    resp = self.send(prep, **send_kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 576, in send
+    r = adapter.send(request, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\adapters.py", line 437, in send
+    raise ConnectionError(e, request=request)
+ConnectionError: HTTPSConnectionPool(host='paas.blueking.com', port=443): Max retries exceeded with url: /login/accounts/get_user/?bk_token=uH_swTKdaKRmR6ezpubqn28oHRdarV6cCGS3xppyXE0 (Caused by NewConnectionError('<requests.packages.urllib3.connection.VerifiedHTTPSConnection object at 0x0000000005A9F438>: Failed to establish a new connection: [Errno 10060] ',))
+ERROR [2019-07-12 09:12:12] E:\2\1\lanhusaas\framework\account\http.py 65 _http_request 11224 7804 
+ 	 login http request error! type: GET, url: https://paas.blueking.com/login/accounts/get_user/, data: {'bk_token': 'uH_swTKdaKRmR6ezpubqn28oHRdarV6cCGS3xppyXE0'} 
+Traceback (most recent call last):
+  File "E:\2\1\lanhusaas\framework\account\http.py", line 53, in _http_request
+    resp = requests.get(url=url, headers=headers, params=data, verify=False)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 67, in get
+    return request('get', url, params=params, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 53, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 468, in request
+    resp = self.send(prep, **send_kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 576, in send
+    r = adapter.send(request, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\adapters.py", line 437, in send
+    raise ConnectionError(e, request=request)
+ConnectionError: HTTPSConnectionPool(host='paas.blueking.com', port=443): Max retries exceeded with url: /login/accounts/get_user/?bk_token=uH_swTKdaKRmR6ezpubqn28oHRdarV6cCGS3xppyXE0 (Caused by NewConnectionError('<requests.packages.urllib3.connection.VerifiedHTTPSConnection object at 0x0000000005A96630>: Failed to establish a new connection: [Errno 10060] ',))
+ERROR [2019-07-12 09:12:12] E:\2\1\lanhusaas\framework\account\accounts.py 107 get_bk_user_info 11224 9516 
+ 	 请求平台接口获取用户信息失败： 
+
+ERROR [2019-07-12 09:12:12] E:\2\1\lanhusaas\framework\account\accounts.py 107 get_bk_user_info 11224 7804 
+ 	 请求平台接口获取用户信息失败： 
+
+ERROR [2019-07-12 09:12:12] E:\2\1\lanhusaas\framework\account\accounts.py 84 is_bk_token_valid 11224 9516 
+ 	 获取记录用户信息失败：local variable 'user' referenced before assignment 
+
+ERROR [2019-07-12 09:12:12] E:\2\1\lanhusaas\framework\account\accounts.py 84 is_bk_token_valid 11224 7804 
+ 	 获取记录用户信息失败：local variable 'user' referenced before assignment 
+
+ERROR [2019-07-12 09:12:23] E:\2\1\lanhusaas\framework\account\accounts.py 84 is_bk_token_valid 11224 10760 
+ 	 获取记录用户信息失败：(2013, 'Lost connection to MySQL server during query ([Errno 10060] )') 
+
+ERROR [2019-07-12 09:12:23] E:\2\1\lanhusaas\framework\account\accounts.py 84 is_bk_token_valid 11224 1900 
+ 	 获取记录用户信息失败：(2013, 'Lost connection to MySQL server during query ([Errno 10060] )') 
+
+ERROR [2019-07-12 09:12:23] E:\2\1\lanhusaas\framework\account\http.py 65 _http_request 11224 14968 
+ 	 login http request error! type: GET, url: https://paas.blueking.com/login/accounts/get_user/, data: {'bk_token': 'uH_swTKdaKRmR6ezpubqn28oHRdarV6cCGS3xppyXE0'} 
+Traceback (most recent call last):
+  File "E:\2\1\lanhusaas\framework\account\http.py", line 53, in _http_request
+    resp = requests.get(url=url, headers=headers, params=data, verify=False)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 67, in get
+    return request('get', url, params=params, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 53, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 468, in request
+    resp = self.send(prep, **send_kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 576, in send
+    r = adapter.send(request, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\adapters.py", line 426, in send
+    raise ConnectionError(err, request=request)
+ConnectionError: ('Connection aborted.', BadStatusLine("''",))
+ERROR [2019-07-12 09:12:23] E:\2\1\lanhusaas\framework\account\http.py 65 _http_request 11224 8020 
+ 	 login http request error! type: GET, url: https://paas.blueking.com/login/accounts/get_user/, data: {'bk_token': 'uH_swTKdaKRmR6ezpubqn28oHRdarV6cCGS3xppyXE0'} 
+Traceback (most recent call last):
+  File "E:\2\1\lanhusaas\framework\account\http.py", line 53, in _http_request
+    resp = requests.get(url=url, headers=headers, params=data, verify=False)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 67, in get
+    return request('get', url, params=params, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\api.py", line 53, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 468, in request
+    resp = self.send(prep, **send_kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\sessions.py", line 576, in send
+    r = adapter.send(request, **kwargs)
+  File "E:\POC\LanhuSaas\venv\lib\site-packages\requests\adapters.py", line 426, in send
+    raise ConnectionError(err, request=request)
+ConnectionError: ('Connection aborted.', BadStatusLine("''",))
+ERROR [2019-07-12 09:12:23] E:\2\1\lanhusaas\framework\account\accounts.py 107 get_bk_user_info 11224 14968 
+ 	 请求平台接口获取用户信息失败： 
+
+ERROR [2019-07-12 09:12:23] E:\2\1\lanhusaas\framework\account\accounts.py 107 get_bk_user_info 11224 8020 
+ 	 请求平台接口获取用户信息失败： 
+

@@ -52,7 +52,7 @@ def gather_data_task_one(**i):
     }
     logger.error(u"celery 调用数据采集任务：{}".format(datetime.now()))
     if check_jobday(area_id):
-        co.create_task_interval(name=task_name, task='market_day.tasks.basic_monitor_task', interval_time=period,
+        co.create_task_crontab(name=task_name, task='market_day.tasks.basic_monitor_task', interval_time=period,
                                 task_args=info, desc=task_name)
 
     else:
@@ -93,7 +93,7 @@ def gather_data_task_five(**add_dicx):
     task_name = add_dicx['task_name']
     info = add_dicx
     if check_jobday(area_id):
-        co.create_task_interval(name=task_name, task='market_day.tasks.base_monitor_task', interval_time=period,
+        co.create_task_crontab(name=task_name, task='market_day.tasks.base_monitor_task', interval_time=period,
                                 task_args=info, desc=task_name)
     else:
         pass

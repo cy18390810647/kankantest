@@ -1,6 +1,7 @@
 #!usr/bin/ebv python
 # -*- coding:utf-8 -*-
 from models import Holiday, HeaderData, Area
+from datetime import datetime
 import os
 # from xlrd import open_workbook
 from monitor_item.models import Monitor
@@ -10,8 +11,10 @@ import celery_opt as co
 import json
 from datetime import datetime
 import pytz
+from djcelery import models as celery_models
 from shell_app.function import get_user
 from settings import BK_PAAS_HOST
+from market_day.celery_opt import enable_task,disable_task
 
 
 def get_holiday(req, area):
@@ -97,7 +100,7 @@ def addperdic_task():
     定时任务demo
     :return:
     """
-    flag = co.create_task_interval(name='demo_per', task='market_day.tasks.count_time', task_args=[10, 50],
+    flag = co.create_task_crontab(name='demo_per', task='market_day.tasks.count_time', task_args=[10, 50],
                                    desc='demodemo', interval_time={'every': 10, 'period': 'seconds'})
     return flag
 
@@ -109,7 +112,6 @@ def add_unit_task(add_dicx):
     :return:
     """
     type = add_dicx['monitor_type']
-    print type
     schename = add_dicx['monitor_name']
     id = Monitor.objects.filter(monitor_name=schename).last().id
     schename = str(id)
@@ -128,8 +130,8 @@ def add_unit_task(add_dicx):
     period = int(add_dicx['period'])
     if type == 1:
         ctime = {
-            'hour': starthour,
-            'minute': startmin,
+            'hour': '*',
+            'minute': '*/1',
         }
         info = {
             'id': id,
@@ -144,7 +146,7 @@ def add_unit_task(add_dicx):
             'score': add_dicx['score']
         }
         # 创建一个基本监控项采集的开始任务
-        co.create_task_crontab(name=schename, task='market_day.tasks.gather_data_task_one', crontab_time=ctime,
+        co.create_task_crontab(name=schename, task='market_day.tasks.basic_monitor_task', crontab_time=ctime,
                                task_args=info, desc=schename)
 
     elif type == 5:
@@ -170,7 +172,7 @@ def add_unit_task(add_dicx):
             'display_type': add_dicx['display_type'],
             'display_rule': add_dicx['display_rule'],
         }
-        co.create_task_crontab(name=schename, task='market_day.tasks.gather_data_task_five', crontab_time=ctime,
+        co.create_task_crontab(name=schename, task='market_day.tasks.basic_monitor_task', crontab_time=ctime,
                                task_args=info, desc=schename)
 
 
@@ -301,3 +303,4 @@ def tran_china_time_other(time, timezone):
     # 使用astimezone得出时间
     time = local_us.astimezone(pytz.timezone('Asia/Shanghai'))
     return str(time.hour) + ":" + str(time.minute)
+

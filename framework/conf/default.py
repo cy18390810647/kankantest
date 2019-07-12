@@ -202,6 +202,7 @@ USE_L10N = True
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT, PROJECT_MODULE_NAME = os.path.split(PROJECT_PATH)
 BASE_DIR = os.path.dirname(os.path.dirname(PROJECT_PATH))
+
 PYTHON_BIN = os.path.dirname(sys.executable)
 
 # ===============================================================================

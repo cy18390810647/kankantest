@@ -417,8 +417,8 @@ def start_flow_task(**info):
             'every': period,
             'period': 'seconds'
         }
-        co.create_task_interval(name=info['template_list']['name'] + '_check_status_test',
-                                task='market_day.tasks.gather_data_task_thrid_test', interval_time=ctime,
+        co.create_task_crontab(name=info['template_list']['name'] + '_check_status_test',
+                                task='market_day.tasks.basic_monitor_task', interval_time=ctime,
                                 task_args=args, desc=name)
         status = 1
     Flow(instance_id=task_id, status=flag, test_flag=1, flow_id=item_id).save()

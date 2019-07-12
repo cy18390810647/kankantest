@@ -208,7 +208,7 @@ def start_crawl(request):
         period = i['period']
         interval = {'every': period, 'period': 'seconds'}
         schename = i['crawl_name']
-        co.create_task_interval(name=schename, task='market_day.tasks.crawl_task', interval_time=interval, task_args=i,
+        co.create_task_crontab(name=schename, task='market_day.tasks.crawl_task', interval_time=interval, task_args=i,
                                 desc=schename)
         # id = i['id']
         # crawl_url = i['crawl_url']

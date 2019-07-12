@@ -30,8 +30,7 @@ def create_task_crontab(name, task, task_args, crontab_time, desc):
         # 如果没有就创建，有的话就继续复用之前的crontab
         crontab = celery_models.CrontabSchedule.objects.create(**crontab_time)
     task.crontab = crontab  # 设置crontab
-    if created:
-        task.enabled = True  # 开启task
+    task.enabled = True  # 开启task
     task.kwargs = json.dumps(task_args, ensure_ascii=False)  # 传入task参数
     task.description = desc
     task.save()
@@ -62,7 +61,6 @@ def create_task_interval(name, task, task_args, interval_time, desc):
         # 如果没有就创建，有的话就继续复用之前的crontab
         interval = celery_models.IntervalSchedule.objects.create(**interval_time)
     task.interval = interval  # 设置crontab
-    #if created:
     # 创建子任务就是要开启子任务
     task.enabled = True  # 开启task
     task.kwargs = json.dumps(task_args, ensure_ascii=False)  # 将kwargs传入
@@ -108,7 +106,6 @@ def disable_task(name):
         task = celery_models.PeriodicTask.objects.get(name=name)
         task.enabled = False  # 设置关闭
         task.save()
-        print name + u'关闭成功'
         return True
     except celery_models.PeriodicTask.DoesNotExist:
         return False
@@ -122,7 +119,6 @@ def enable_task(name):
         task = celery_models.PeriodicTask.objects.get(name=name)
         task.enabled = True  # 设置开启
         task.save()
-        print name + u'开启成功'
         return True
     except celery_models.PeriodicTask.DoesNotExist:
         return False
@@ -138,7 +134,6 @@ def delete_task(name):
         task = celery_models.PeriodicTask.objects.get(name=name)
         task.enabled = False  # 设置关闭
         task.delete()
-        print name + u'删除成功'
         return True
     except celery_models.PeriodicTask.DoesNotExist:
         return False

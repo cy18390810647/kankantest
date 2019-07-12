@@ -13,6 +13,12 @@ urls config
 from django.conf.urls import patterns, include, url
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
+from apscheduler.scheduler import Scheduler
+from datetime import datetime
+from monitor_item.models import Monitor
+from django.forms import model_to_dict
+from market_day.celery_opt import enable_task,disable_task
+import time
 # admin.autodiscover()
 
 # 公共URL配置
@@ -54,11 +60,33 @@ urlpatterns = patterns(
     url(r'^home_page/', include('home_page.urls')),
     # iqube接口
     url(r'^iqube_interface/', include('iqube_interface.urls')),
-
-
-
 )
+sched = Scheduler()  #实例化，固定格式
+@sched.interval_schedule(seconds=60)  #装饰器，seconds=60意思为该函数为1分钟运行一次
+def mytask():
+    death_func()
 
+sched.start ()  # 启动该脚本
+def death_func():
+    while True:
+        task_obj = Monitor.objects.filter(status=1)
+        for monitor_mod in task_obj:
+            monitor = model_to_dict(monitor_mod)
+            start_time = str(monitor['start_time'])
+            end_time = str(monitor['end_time'])
+            schename = monitor['id']
+            strnow = datetime.strftime (datetime.now (), '%H:%M')
+            starttime = start_time.split (':')[0] + ":" + start_time.split (':')[1]
+            endtime = end_time.split (':')[0] + ":" + end_time.split (':')[1]
+            print schename
+            if starttime <= strnow <= endtime:
+
+                print True
+                enable_task(schename)
+            else:
+                print False
+                disable_task(schename)
+        time.sleep(10)
 
 handler404 = 'error_pages.views.error_404'
 handler500 = 'error_pages.views.error_500'
